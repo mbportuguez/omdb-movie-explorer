@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -29,6 +30,14 @@ function MoviesListScreen() {
 
   const [queryInput, setQueryInput] = useState(search.query);
   const [type, setType] = useState<MovieType | undefined>(search.type as MovieType | undefined);
+  const [year, setYear] = useState(search.year ?? '');
+  const [sortBy, setSortBy] = useState<
+    'relevance' | 'year_asc' | 'year_desc' | 'title_asc' | 'title_desc'
+  >('relevance');
+  const [lastYearSort, setLastYearSort] = useState<'year_asc' | 'year_desc'>('year_desc');
+  const [lastTitleSort, setLastTitleSort] = useState<'title_asc' | 'title_desc'>('title_asc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
   const debouncedQuery = useDebouncedValue(queryInput, 600);
 
   const [items, setItems] = useState<MovieSummary[]>([]);
@@ -39,6 +48,9 @@ function MoviesListScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState('');
+  const lastFiltersRef = useRef<{ query: string; type?: MovieType; year?: string }>({
+    query: '',
+  });
 
   const hasMore = page < totalPages;
   const loadMoreLockRef = useRef(false);
@@ -46,9 +58,15 @@ function MoviesListScreen() {
   const fetchPageRaw = useCallback(
     async (query: string, pageToLoad: number) => {
       const trimmed = query.trim();
-      return searchMovies({ query: trimmed, page: pageToLoad, type });
+      const normalizedYear = year.trim();
+      return searchMovies({
+        query: trimmed,
+        page: pageToLoad,
+        type,
+        year: normalizedYear.length === 4 ? normalizedYear : undefined,
+      });
     },
-    [type],
+    [type, year],
   );
 
   const loadFirstPage = useCallback(
@@ -60,6 +78,7 @@ function MoviesListScreen() {
         setTotalPages(0);
         setError(null);
         setLastQuery('');
+        lastFiltersRef.current = { query: '' };
         return;
       }
 
@@ -72,14 +91,20 @@ function MoviesListScreen() {
         setPage(1);
         setTotalPages(result.totalPages);
         setLastQuery(q);
-        setSearch({ query: q, type });
+        const normalizedYear = year.trim() || undefined;
+        lastFiltersRef.current = { query: q, type, year: normalizedYear };
+        setSearch({
+          query: q,
+          type,
+          year: normalizedYear,
+        });
       } catch (e) {
         setError('Failed to load movies');
       } finally {
         setIsLoading(false);
       }
     },
-    [fetchPageRaw, setSearch, type],
+    [fetchPageRaw, setSearch, type, year],
   );
 
   const loadMore = useCallback(async () => {
@@ -121,16 +146,24 @@ function MoviesListScreen() {
   useEffect(() => {
     const q = debouncedQuery.trim();
     if (q.length < 3) {
+      lastFiltersRef.current = { query: '' };
       // keep existing clearing logic in loadFirstPage for safety
       loadFirstPage('');
       return;
     }
-    // Avoid refetching the same first page for the same query
-    if (q === lastQuery) {
+    // Check if filters changed (query, type, or year)
+    const normalizedYear = year.trim() || undefined;
+    const currentFilters = { query: q, type, year: normalizedYear };
+    const lastFilters = lastFiltersRef.current;
+    if (
+      lastFilters.query === currentFilters.query &&
+      lastFilters.type === currentFilters.type &&
+      lastFilters.year === currentFilters.year
+    ) {
       return;
     }
     loadFirstPage(debouncedQuery);
-  }, [debouncedQuery, lastQuery, loadFirstPage]);
+  }, [debouncedQuery, type, year, lastQuery, loadFirstPage]);
 
   const onEndReached = () => {
     loadMore();
@@ -167,6 +200,39 @@ function MoviesListScreen() {
     [],
   );
 
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const startYear = 1900;
+    const yearList: string[] = [];
+    for (let y = currentYear; y >= startYear; y--) {
+      yearList.push(String(y));
+    }
+    return yearList;
+  }, []);
+
+  const sortedItems = useMemo(() => {
+    if (sortBy === 'relevance') {
+      return items;
+    }
+    const cloned = [...items];
+    if (sortBy === 'year_desc' || sortBy === 'year_asc') {
+      cloned.sort((a, b) => {
+        const ay = parseInt(a.year, 10);
+        const by = parseInt(b.year, 10);
+        if (Number.isNaN(ay) || Number.isNaN(by)) {
+          return 0;
+        }
+        return sortBy === 'year_desc' ? by - ay : ay - by;
+      });
+    } else if (sortBy === 'title_asc' || sortBy === 'title_desc') {
+      cloned.sort((a, b) => {
+        const comparison = a.title.localeCompare(b.title);
+        return sortBy === 'title_asc' ? comparison : -comparison;
+      });
+    }
+    return cloned;
+  }, [items, sortBy]);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -182,7 +248,95 @@ function MoviesListScreen() {
             style={styles.input}
             returnKeyType="search"
           />
+          <Pressable
+            style={styles.filterButton}
+            onPress={() => setShowFilters(prev => !prev)}
+          >
+            <Text style={styles.filterButtonText}>Filters</Text>
+          </Pressable>
         </View>
+        {showFilters && (
+          <View style={styles.filtersRow}>
+              <Pressable
+                onPress={() => setShowYearPicker(true)}
+                style={styles.yearInput}
+              >
+                <Text style={styles.yearInputText}>
+                  {year || 'Year'}
+                </Text>
+              </Pressable>
+              <View style={styles.sortRow}>
+                <Pressable
+                  onPress={() => setSortBy('relevance')}
+                  style={[styles.sortChip, sortBy === 'relevance' && styles.sortChipActive]}
+                >
+                  <Text
+                    style={[styles.sortChipText, sortBy === 'relevance' && styles.sortChipTextActive]}
+                  >
+                    Default
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (sortBy === 'year_desc' || sortBy === 'year_asc') {
+                      // Toggle if already on year sort
+                      const next = sortBy === 'year_desc' ? 'year_asc' : 'year_desc';
+                      setSortBy(next);
+                      setLastYearSort(next);
+                    } else {
+                      // Use remembered direction when switching from other sort
+                      setSortBy(lastYearSort);
+                    }
+                  }}
+                  style={[
+                    styles.sortChip,
+                    (sortBy === 'year_desc' || sortBy === 'year_asc') && styles.sortChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sortChipText,
+                      (sortBy === 'year_desc' || sortBy === 'year_asc') && styles.sortChipTextActive,
+                    ]}
+                  >
+                    Year {sortBy === 'year_desc' ? '↓' : sortBy === 'year_asc' ? '↑' : lastYearSort === 'year_desc' ? '↓' : '↑'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (sortBy === 'title_asc' || sortBy === 'title_desc') {
+                      // Toggle if already on title sort
+                      const next = sortBy === 'title_asc' ? 'title_desc' : 'title_asc';
+                      setSortBy(next);
+                      setLastTitleSort(next);
+                    } else {
+                      // Use remembered direction when switching from other sort
+                      setSortBy(lastTitleSort);
+                    }
+                  }}
+                  style={[
+                    styles.sortChip,
+                    (sortBy === 'title_asc' || sortBy === 'title_desc') && styles.sortChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sortChipText,
+                      (sortBy === 'title_asc' || sortBy === 'title_desc') && styles.sortChipTextActive,
+                    ]}
+                  >
+                    {sortBy === 'title_asc'
+                      ? 'A–Z'
+                      : sortBy === 'title_desc'
+                        ? 'Z–A'
+                        : lastTitleSort === 'title_asc'
+                          ? 'A–Z'
+                          : 'Z–A'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+        )}
         <View style={styles.filtersRow}>
           <ScrollView
             horizontal
@@ -217,7 +371,7 @@ function MoviesListScreen() {
       </View>
 
       <FlatList
-        data={items}
+        data={sortedItems}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onEndReached={onEndReached}
@@ -234,6 +388,60 @@ function MoviesListScreen() {
         }
         contentContainerStyle={items.length === 0 ? styles.emptyContainer : undefined}
       />
+
+      <Modal
+        visible={showYearPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowYearPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Year</Text>
+              <Pressable onPress={() => setShowYearPicker(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={years}
+              keyExtractor={item => item}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setYear(item);
+                    setShowYearPicker(false);
+                  }}
+                  style={[
+                    styles.yearOption,
+                    year === item && styles.yearOptionSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.yearOptionText,
+                      year === item && styles.yearOptionTextSelected,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </Pressable>
+              )}
+              initialNumToRender={20}
+              maxToRenderPerBatch={20}
+            />
+            <Pressable
+              onPress={() => {
+                setYear('');
+                setShowYearPicker(false);
+              }}
+              style={styles.clearYearButton}
+            >
+              <Text style={styles.clearYearText}>Clear</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -273,9 +481,36 @@ const styles = StyleSheet.create({
     marginRight: 8,
     color: '#777',
   },
+  filterButton: {
+    marginLeft: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#111',
+  },
+  filterButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+  },
   filtersRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  yearInput: {
+    flexBasis: 90,
+    marginRight: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f7f7f7',
+    justifyContent: 'center',
+  },
+  yearInputText: {
+    fontSize: 14,
+    color: '#333',
   },
   categories: {
     gap: 12,
@@ -308,6 +543,31 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: '#fff',
   },
+  sortRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sortChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#d0d0d0',
+    backgroundColor: '#fff',
+  },
+  sortChipActive: {
+    backgroundColor: '#111',
+    borderColor: '#111',
+  },
+  sortChipText: {
+    fontSize: 13,
+    color: '#333',
+  },
+  sortChipTextActive: {
+    color: '#fff',
+  },
   emptyContainer: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -320,6 +580,66 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingVertical: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalClose: {
+    fontSize: 24,
+    color: '#666',
+    paddingHorizontal: 8,
+  },
+  yearOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f0f0f0',
+  },
+  yearOptionSelected: {
+    backgroundColor: '#f0f0f0',
+  },
+  yearOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  yearOptionTextSelected: {
+    fontWeight: '600',
+    color: '#111',
+  },
+  clearYearButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  clearYearText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
 });
 
