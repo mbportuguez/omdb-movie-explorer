@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -27,6 +27,19 @@ function MoviesListScreen() {
   const navigation = useNavigation<Nav>();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { search, setSearch } = useSearch();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.navigate('Favorites')}
+          style={styles.headerButton}
+        >
+          <Text style={styles.headerButtonText}>❤️</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
 
   const [queryInput, setQueryInput] = useState(search.query);
   const [type, setType] = useState<MovieType | undefined>(search.type as MovieType | undefined);
@@ -640,6 +653,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  headerButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  headerButtonText: {
+    fontSize: 24,
   },
 });
 
