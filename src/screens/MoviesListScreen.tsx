@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { searchMovies, MovieSummary } from '../api/omdb';
+import { searchMovies, MovieSummary, MovieType } from '../api/omdb';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import MovieCard from '../components/MovieCard';
 import { useFavorites } from '../context/FavoritesContext';
@@ -28,60 +28,113 @@ function MoviesListScreen() {
   const { search, setSearch } = useSearch();
 
   const [queryInput, setQueryInput] = useState(search.query);
-  const [category, setCategory] = useState<string | undefined>(undefined);
-  const debouncedQuery = useDebouncedValue(queryInput, 400);
+  const [type, setType] = useState<MovieType | undefined>(search.type as MovieType | undefined);
+  const debouncedQuery = useDebouncedValue(queryInput, 600);
 
   const [items, setItems] = useState<MovieSummary[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastQuery, setLastQuery] = useState('');
 
   const hasMore = page < totalPages;
+  const loadMoreLockRef = useRef(false);
 
-  const fetchPage = useCallback(
-    async (pageToLoad: number, append: boolean) => {
-      const activeQuery = debouncedQuery.trim();
-      const effectiveQuery = [activeQuery, category].filter(Boolean).join(' ');
-      if (!effectiveQuery) {
+  const fetchPageRaw = useCallback(
+    async (query: string, pageToLoad: number) => {
+      const trimmed = query.trim();
+      return searchMovies({ query: trimmed, page: pageToLoad, type });
+    },
+    [type],
+  );
+
+  const loadFirstPage = useCallback(
+    async (query: string) => {
+      const q = query.trim();
+      if (q.length < 3) {
         setItems([]);
+        setPage(1);
         setTotalPages(0);
         setError(null);
+        setLastQuery('');
         return;
       }
-      if (append) setLoading(true);
-      else setRefreshing(true);
+
+      setIsLoading(true);
+      setError(null);
+
       try {
-        const result = await searchMovies({
-          query: effectiveQuery,
-          page: pageToLoad,
-        });
-        setError(result.error || null);
+        const result = await fetchPageRaw(q, 1);
+        setItems(result.items);
+        setPage(1);
         setTotalPages(result.totalPages);
-        setPage(pageToLoad);
-        setItems(prev => (append ? [...prev, ...result.items] : result.items));
-        setSearch({ query: activeQuery });
+        setLastQuery(q);
+        setSearch({ query: q, type });
       } catch (e) {
         setError('Failed to load movies');
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        setIsLoading(false);
       }
     },
-    [debouncedQuery, category, setSearch],
+    [fetchPageRaw, setSearch, type],
   );
 
+  const loadMore = useCallback(async () => {
+    if (loadMoreLockRef.current) return;
+    if (!hasMore || isLoading || isFetchingMore || !lastQuery) return;
+
+    loadMoreLockRef.current = true;
+    setIsFetchingMore(true);
+    setError(null);
+
+    try {
+      const nextPage = page + 1;
+      const result = await fetchPageRaw(lastQuery, nextPage);
+
+      setItems(prev => {
+        const seen = new Set(prev.map(m => m.imdbID));
+        return [...prev, ...result.items.filter(m => !seen.has(m.imdbID))];
+      });
+
+      setPage(nextPage);
+      setTotalPages(result.totalPages);
+    } catch (e) {
+      setError('Failed to load more');
+    } finally {
+      setIsFetchingMore(false);
+      setTimeout(() => {
+        loadMoreLockRef.current = false;
+      }, 200);
+    }
+  }, [fetchPageRaw, hasMore, isFetchingMore, isLoading, lastQuery, page]);
+
+  const onRefresh = useCallback(async () => {
+    if (!lastQuery) return;
+    setIsRefreshing(true);
+    await loadFirstPage(lastQuery);
+    setIsRefreshing(false);
+  }, [lastQuery, loadFirstPage]);
+
   useEffect(() => {
-    fetchPage(1, false);
-  }, [debouncedQuery, category, fetchPage]);
+    const q = debouncedQuery.trim();
+    if (q.length < 3) {
+      // keep existing clearing logic in loadFirstPage for safety
+      loadFirstPage('');
+      return;
+    }
+    // Avoid refetching the same first page for the same query
+    if (q === lastQuery) {
+      return;
+    }
+    loadFirstPage(debouncedQuery);
+  }, [debouncedQuery, lastQuery, loadFirstPage]);
 
   const onEndReached = () => {
-    if (loading || refreshing || !hasMore) return;
-    fetchPage(page + 1, true);
+    loadMore();
   };
-
-  const onRefresh = () => fetchPage(1, false);
 
   const renderItem = useCallback(
     ({ item }: { item: MovieSummary }) => (
@@ -98,32 +151,19 @@ function MoviesListScreen() {
   const keyExtractor = useCallback((item: MovieSummary) => item.imdbID, []);
 
   const listEmpty = useMemo(() => {
-    if (refreshing || loading) return null;
+    if (isLoading) return null;
     if (error) return <Text style={styles.stateText}>{error}</Text>;
     if (!debouncedQuery.trim()) return <Text style={styles.stateText}>Search for a movie</Text>;
     return <Text style={styles.stateText}>No results</Text>;
-  }, [debouncedQuery, error, loading, refreshing]);
+  }, [debouncedQuery, error, isLoading]);
 
-  const categories = useMemo(
-    () => [
-      'Action',
-      'Adventure',
-      'Comedy',
-      'Drama',
-      'Romance',
-      'Horror',
-      'Thriller',
-      'Science Fiction',
-      'Fantasy',
-      'Mystery',
-      'Crime',
-      'Animation',
-      'Documentary',
-      'Family',
-      'Musical',
-      'War',
-      'Western',
-    ],
+  const typeChips = useMemo(
+    () =>
+      [
+        { label: 'Movies', value: 'movie' as MovieType },
+        { label: 'Series', value: 'series' as MovieType },
+        { label: 'Episodes', value: 'episode' as MovieType },
+      ] as const,
     [],
   );
 
@@ -133,13 +173,16 @@ function MoviesListScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.searchSection}>
-        <TextInput
-          value={queryInput}
-          onChangeText={setQueryInput}
-          placeholder="Search movies..."
-          style={styles.input}
-          returnKeyType="search"
-        />
+        <View style={styles.searchRow}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            value={queryInput}
+            onChangeText={setQueryInput}
+            placeholder="Search"
+            style={styles.input}
+            returnKeyType="search"
+          />
+        </View>
         <View style={styles.filtersRow}>
           <ScrollView
             horizontal
@@ -148,23 +191,23 @@ function MoviesListScreen() {
           >
             <Pressable
               key="all"
-              onPress={() => setCategory(undefined)}
-              style={[styles.chip, !category && styles.chipActive]}
+              onPress={() => setType(undefined)}
+              style={[styles.chip, !type && styles.chipActive]}
             >
-              <Text style={[styles.chipText, !category && styles.chipTextActive]}>
+              <Text style={[styles.chipText, !type && styles.chipTextActive]}>
                 All
               </Text>
             </Pressable>
-            {categories.map(cat => {
-              const active = category === cat;
+            {typeChips.map(option => {
+              const active = type === option.value;
               return (
                 <Pressable
-                  key={cat}
-                  onPress={() => setCategory(active ? undefined : cat)}
+                  key={option.value}
+                  onPress={() => setType(active ? undefined : option.value)}
                   style={[styles.chip, active && styles.chipActive]}
                 >
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {cat}
+                    {option.label}
                   </Text>
                 </Pressable>
               );
@@ -179,11 +222,11 @@ function MoviesListScreen() {
         renderItem={renderItem}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
-        refreshing={refreshing}
+        refreshing={isRefreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={listEmpty}
         ListFooterComponent={
-          loading && items.length > 0 ? (
+          isFetchingMore && items.length > 0 ? (
             <View style={styles.footer}>
               <ActivityIndicator />
             </View>
@@ -209,14 +252,26 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
     gap: 12,
   },
-  input: {
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f3f3f3',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
+    color: '#777',
   },
   filtersRow: {
     flexDirection: 'row',
