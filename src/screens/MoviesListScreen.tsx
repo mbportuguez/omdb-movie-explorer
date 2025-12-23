@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { searchMovies, MovieSummary, MovieType } from '../api/omdb';
+import { searchMovies, MovieSummary } from '../api/omdb';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import MovieCard from '../components/MovieCard';
 import { useFavorites } from '../context/FavoritesContext';
@@ -27,8 +28,7 @@ function MoviesListScreen() {
   const { search, setSearch } = useSearch();
 
   const [queryInput, setQueryInput] = useState(search.query);
-  const [year, setYear] = useState(search.year ?? '');
-  const [type, setType] = useState<MovieType | undefined>(search.type);
+  const [category, setCategory] = useState<string | undefined>(undefined);
   const debouncedQuery = useDebouncedValue(queryInput, 400);
 
   const [items, setItems] = useState<MovieSummary[]>([]);
@@ -43,7 +43,8 @@ function MoviesListScreen() {
   const fetchPage = useCallback(
     async (pageToLoad: number, append: boolean) => {
       const activeQuery = debouncedQuery.trim();
-      if (!activeQuery) {
+      const effectiveQuery = [activeQuery, category].filter(Boolean).join(' ');
+      if (!effectiveQuery) {
         setItems([]);
         setTotalPages(0);
         setError(null);
@@ -53,16 +54,14 @@ function MoviesListScreen() {
       else setRefreshing(true);
       try {
         const result = await searchMovies({
-          query: activeQuery,
+          query: effectiveQuery,
           page: pageToLoad,
-          year: year.trim() || undefined,
-          type,
         });
         setError(result.error || null);
         setTotalPages(result.totalPages);
         setPage(pageToLoad);
         setItems(prev => (append ? [...prev, ...result.items] : result.items));
-        setSearch({ query: activeQuery, year: year.trim() || undefined, type });
+        setSearch({ query: activeQuery });
       } catch (e) {
         setError('Failed to load movies');
       } finally {
@@ -70,12 +69,12 @@ function MoviesListScreen() {
         setRefreshing(false);
       }
     },
-    [debouncedQuery, year, type, setSearch],
+    [debouncedQuery, category, setSearch],
   );
 
   useEffect(() => {
     fetchPage(1, false);
-  }, [debouncedQuery, year, type, fetchPage]);
+  }, [debouncedQuery, category, fetchPage]);
 
   const onEndReached = () => {
     if (loading || refreshing || !hasMore) return;
@@ -105,7 +104,28 @@ function MoviesListScreen() {
     return <Text style={styles.stateText}>No results</Text>;
   }, [debouncedQuery, error, loading, refreshing]);
 
-  const typeOptions: (MovieType | undefined)[] = [undefined, 'movie', 'series', 'episode'];
+  const categories = useMemo(
+    () => [
+      'Action',
+      'Adventure',
+      'Comedy',
+      'Drama',
+      'Romance',
+      'Horror',
+      'Thriller',
+      'Science Fiction',
+      'Fantasy',
+      'Mystery',
+      'Crime',
+      'Animation',
+      'Documentary',
+      'Family',
+      'Musical',
+      'War',
+      'Western',
+    ],
+    [],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -121,30 +141,35 @@ function MoviesListScreen() {
           returnKeyType="search"
         />
         <View style={styles.filtersRow}>
-          <TextInput
-            value={year}
-            onChangeText={setYear}
-            placeholder="Year"
-            keyboardType="numeric"
-            style={[styles.input, styles.yearInput]}
-            maxLength={4}
-          />
-          <View style={styles.typeChips}>
-            {typeOptions.map(opt => (
-              <Pressable
-                key={opt ?? 'all'}
-                onPress={() => setType(opt)}
-                style={[
-                  styles.chip,
-                  opt === type && styles.chipActive,
-                ]}
-              >
-                <Text style={[styles.chipText, opt === type && styles.chipTextActive]}>
-                  {opt ? opt : 'all'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categories}
+          >
+            <Pressable
+              key="all"
+              onPress={() => setCategory(undefined)}
+              style={[styles.chip, !category && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, !category && styles.chipTextActive]}>
+                All
+              </Text>
+            </Pressable>
+            {categories.map(cat => {
+              const active = category === cat;
+              return (
+                <Pressable
+                  key={cat}
+                  onPress={() => setCategory(active ? undefined : cat)}
+                  style={[styles.chip, active && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {cat}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
 
@@ -177,29 +202,30 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: '#fff',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e0e0e0',
-    gap: 8,
+    gap: 12,
   },
   input: {
     backgroundColor: '#f3f3f3',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   filtersRow: {
     flexDirection: 'row',
-    gap: 8,
     alignItems: 'center',
   },
-  yearInput: {
-    width: 90,
+  categories: {
+    gap: 12,
+    paddingVertical: 8,
+    paddingRight: 12,
   },
   typeChips: {
     flexDirection: 'row',
@@ -208,9 +234,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#d0d0d0',
     backgroundColor: '#fff',
@@ -221,7 +247,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: '#333',
-    fontSize: 14,
+    fontSize: 15,
     textTransform: 'capitalize',
   },
   chipTextActive: {
