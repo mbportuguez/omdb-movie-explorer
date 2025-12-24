@@ -1,97 +1,250 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# OMDB Movie Explorer
 
-# Getting Started
+A React Native mobile application for exploring movies using the [OMDb API](http://www.omdbapi.com/). Search, browse, and save your favorite movies with a beautiful, modern UI featuring dark mode support.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Features
 
-## Step 1: Start Metro
+### Core Functionality
+- 🔍 **Movie Search**: Search movies by title with real-time results
+- 📱 **Movie Details**: View comprehensive movie information including plot, ratings, cast, and more
+- ⭐ **Favorites**: Save and manage your favorite movies with persistent storage
+- 🎬 **Latest Movies**: Browse recently released movies
+- 🔄 **Infinite Scroll**: Load more results as you scroll
+- 🎨 **Dark Mode**: Toggle between light and dark themes with system preference support
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### Advanced Features
+- ⏱️ **Debounced Search**: Optimized search with 500ms debounce delay
+- 🔖 **Recent Searches**: Quick access to your recent search queries
+- 📥 **Offline Support**: View cached movie details and favorites offline
+- 🎯 **Filters & Sorting**: Filter by type (Movie/Series/Episode) and year, sort by year or title
+- 🖼️ **Image Caching**: Efficient image loading with disk caching
+- ⚡ **Performance Optimized**: Lazy loading, memoization, and efficient list rendering
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Prerequisites
 
-```sh
-# Using npm
+- **Node.js** >= 20
+- **React Native** development environment set up
+  - Follow the [React Native Environment Setup Guide](https://reactnative.dev/docs/set-up-your-environment)
+- **Android Studio** (for Android development)
+- **Xcode** (for iOS development, macOS only)
+- **OMDb API Key** - Get a free API key from [OMDb API](http://www.omdbapi.com/apikey.aspx)
+
+## Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd OmdbMovieExplorer
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+   
+   > **Note**: Using `--legacy-peer-deps` is required due to React 19 compatibility with some dependencies.
+
+3. **iOS Setup** (macOS only)
+   ```bash
+   cd ios
+   bundle install
+   bundle exec pod install
+   cd ..
+   ```
+
+## API Key Configuration
+
+The app requires an OMDb API key to function. Follow these steps:
+
+1. **Get your API key**
+   - Visit [OMDb API](http://www.omdbapi.com/apikey.aspx)
+   - Sign up for a free API key
+
+2. **Create `.env` file**
+   - In the project root, create a `.env` file:
+     ```bash
+     touch .env
+     ```
+
+3. **Add your API key**
+   - Open `.env` and add:
+     ```
+     OMDB_API_KEY=your_api_key_here
+     ```
+   - Replace `your_api_key_here` with your actual API key
+
+4. **Verify `.env` is gitignored**
+   - The `.env` file should already be in `.gitignore`
+   - Never commit your API key to version control
+
+> **Important**: The app will throw an error if the API key is not configured. Make sure your `.env` file is in the project root.
+
+## Running the App
+
+### Start Metro Bundler
+
+In the project root, start the Metro bundler:
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+Keep this terminal running while developing.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+### Run on Android
 
-### Android
+In a new terminal:
 
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+### Run on iOS (macOS only)
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Project Structure
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```
+src/
+├── api/              # API functions (OMDb integration)
+├── components/       # Reusable UI components
+├── config/           # Configuration files
+├── constants/        # App-wide constants
+├── context/          # React Context providers (Theme, Favorites)
+├── hooks/            # Custom React hooks
+├── navigation/       # Navigation setup
+├── screens/          # Screen components
+├── types/            # TypeScript type definitions
+└── utils/            # Utility functions
+```
 
-## Step 3: Modify your app
+### Key Files
 
-Now that you have successfully run the app, let's make changes!
+- **`src/api/omdb.ts`**: OMDb API integration
+- **`src/config/api.ts`**: API configuration and key management
+- **`src/constants/app.ts`**: App constants (delays, limits, error messages)
+- **`src/context/ThemeContext.tsx`**: Theme management (light/dark mode)
+- **`src/context/FavoritesContext.tsx`**: Favorites state management
+- **`src/navigation/RootNavigator.tsx`**: Navigation setup
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Testing
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+The project includes comprehensive unit tests for utilities and hooks.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+### Run Tests
 
-## Congratulations! :tada:
+```bash
+# Run all tests
+npm test
 
-You've successfully run and modified your React Native App. :partying_face:
+# Run with coverage
+npm test -- --coverage
 
-### Now what?
+# Run specific test suites
+npm test -- utils      # Utility function tests
+npm test -- hooks      # Hook tests
+npm test -- components # Component tests
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### Test Coverage
 
-# Troubleshooting
+- ✅ **Utility Functions**: 100% coverage (`sortMovies`, `movieUtils`)
+- ✅ **Custom Hooks**: Comprehensive tests (`useDebouncedValue`, `useSortToggle`, `useTypingIndicator`)
+- ✅ **Component Tests**: Basic component validation tests
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## Development Notes
 
-# Learn More
+### State Management
+- Uses React Hooks and Context API (no Redux/MobX)
+- Custom hooks for reusable logic
+- Context providers for global state (Theme, Favorites)
 
-To learn more about React Native, take a look at the following resources:
+### Performance Optimizations
+- `React.memo` for component memoization
+- `useCallback` for function memoization
+- `FlatList` with optimized props for efficient rendering
+- Image prefetching and disk caching
+- Debounced API calls to reduce network requests
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+### API Key Security
+- API key loaded from environment variables (`.env` file)
+- No hardcoded keys in source code
+- Error thrown if API key is missing (no fallback/default)
+- `.env` file is gitignored
+
+### Offline Support
+- Favorites persist using `AsyncStorage`
+- Movie details cached for 7 days
+- Offline indicator shown when using cached data
+
+## Assumptions Made
+
+1. **API Key**: Users have access to an OMDb API key (free tier available)
+2. **Network**: App requires internet connection for search and fetching movie details
+3. **Platform**: Optimized for both Android and iOS
+4. **React Native Version**: Built with React Native 0.83.1 and React 19.2.0
+5. **Storage**: Uses `AsyncStorage` for local persistence (favorites, theme, cache)
+
+## Troubleshooting
+
+### API Key Issues
+- **Error**: "OMDB_API_KEY environment variable is not set"
+  - **Solution**: Create `.env` file in project root with `OMDB_API_KEY=your_key`
+
+### Metro Bundler Issues
+- **Error**: Port 8081 already in use
+  - **Solution**: Kill the process using port 8081 or use a different port:
+    ```bash
+    npm start -- --port=8088
+    ```
+
+### Android Build Issues
+- **Error**: Build fails
+  - **Solution**: Clean and rebuild:
+    ```bash
+    cd android
+    ./gradlew clean
+    cd ..
+    npm run android
+    ```
+
+### iOS Build Issues
+- **Error**: Pod installation fails
+  - **Solution**: Update CocoaPods and reinstall:
+    ```bash
+    cd ios
+    pod deintegrate
+    pod install
+    cd ..
+    ```
+
+## Available Scripts
+
+- `npm start` - Start Metro bundler
+- `npm run android` - Run on Android
+- `npm run ios` - Run on iOS
+- `npm test` - Run tests
+- `npm run lint` - Run ESLint
+
+## Technologies Used
+
+- **React Native** 0.83.1
+- **React** 19.2.0
+- **TypeScript**
+- **React Navigation** 7.0
+- **React Native Fast Image** - Image caching
+- **React Native Linear Gradient** - Gradient effects
+- **AsyncStorage** - Local persistence
+- **Jest** - Testing framework
+- **React Native Testing Library** - Component testing
+
+## License
+
+This project is private and proprietary.
+
+## Contributing
+
+This is a private project. For questions or issues, please contact the repository maintainer.
