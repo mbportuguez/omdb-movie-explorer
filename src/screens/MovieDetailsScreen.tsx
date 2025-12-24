@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchMovieDetails, MovieDetails } from '../api/omdb';
 import { useFavorites } from '../context/FavoritesContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
+import CachedImage from '../components/CachedImage';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'MovieDetails'>;
 type Route = RouteProp<RootStackParamList, 'MovieDetails'>;
@@ -79,7 +79,7 @@ function MovieDetailsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {movie.poster && (
-        <Image source={{ uri: movie.poster }} style={styles.poster} resizeMode="cover" />
+        <CachedImage source={{ uri: movie.poster }} style={styles.poster} resizeMode="cover" />
       )}
 
       <View style={styles.header}>
