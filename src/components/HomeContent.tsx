@@ -4,6 +4,7 @@ import FastImage from 'react-native-fast-image';
 import HorizontalMovieCard from './HorizontalMovieCard';
 import { MovieSummary, MovieType } from '../api/omdb';
 import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type HomeContentProps = {
   isLoadingLatest: boolean;
@@ -28,6 +29,8 @@ export default function HomeContent({
   onViewAllLatest,
   onViewAllFavorites,
 }: HomeContentProps) {
+  const colors = useAppColors();
+
   // Prefetch posters when movies change
   useEffect(() => {
     const allPosters = [
@@ -46,16 +49,16 @@ export default function HomeContent({
   return (
     <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Latest Movie</Text>
+        <Text style={[styles.sectionTitle, { color: colors.TEXT.PRIMARY }]}>Latest Movie</Text>
         {latestMovies.length > 0 && onViewAllLatest && (
           <Pressable onPress={onViewAllLatest}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={[styles.viewAllText, { color: colors.ACCENT }]}>View All</Text>
           </Pressable>
         )}
       </View>
       {isLoadingLatest ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#ff6b35" />
+          <ActivityIndicator color={colors.ACCENT} />
         </View>
       ) : (
         <ScrollView
@@ -74,16 +77,16 @@ export default function HomeContent({
       )}
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Favorite Movie</Text>
+        <Text style={[styles.sectionTitle, { color: colors.TEXT.PRIMARY }]}>Favorite Movie</Text>
         {favoritesList.length > 0 && onViewAllFavorites && (
           <Pressable onPress={onViewAllFavorites}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={[styles.viewAllText, { color: colors.ACCENT }]}>View All</Text>
           </Pressable>
         )}
       </View>
       {favoritesList.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{ERROR_MESSAGES.NO_FAVORITES}</Text>
+          <Text style={[styles.emptyText, { color: colors.TEXT.TERTIARY }]}>{ERROR_MESSAGES.NO_FAVORITES}</Text>
         </View>
       ) : (
         <ScrollView
@@ -124,12 +127,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
   },
   viewAllText: {
     fontSize: 14,
     fontWeight: '500',
-    color: APP_CONSTANTS.COLORS.ACCENT,
   },
   moviesContainer: {
     paddingHorizontal: 20,
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#888',
   },
 });
 

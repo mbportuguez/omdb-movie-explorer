@@ -4,6 +4,7 @@ import FastImage from 'react-native-fast-image';
 import { MovieSummary } from '../api/omdb';
 import MovieCard from './MovieCard';
 import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type MovieGridProps = {
   movies: MovieSummary[];
@@ -26,6 +27,8 @@ export default function MovieGrid({
   onToggleFavorite,
   isFavorite,
 }: MovieGridProps) {
+  const colors = useAppColors();
+
   useEffect(() => {
     if (movies.length > 0) {
       const urls = movies
@@ -58,15 +61,15 @@ export default function MovieGrid({
     <View style={styles.emptyContainer}>
       {isLoading ? (
         <>
-          <ActivityIndicator size="large" color={APP_CONSTANTS.COLORS.ACCENT} />
-          <Text style={styles.emptyText}>Loading...</Text>
+          <ActivityIndicator size="large" color={colors.ACCENT} />
+          <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>Loading...</Text>
         </>
       ) : error ? (
-        <Text style={styles.emptyText}>{error}</Text>
+        <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>{error}</Text>
       ) : (
         <>
-          <Text style={styles.emptyText}>{emptyMessage || ERROR_MESSAGES.NO_RESULTS}</Text>
-          {emptySubtext && <Text style={styles.emptySubtext}>{emptySubtext}</Text>}
+          <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>{emptyMessage || ERROR_MESSAGES.NO_RESULTS}</Text>
+          {emptySubtext && <Text style={[styles.emptySubtext, { color: colors.TEXT.SECONDARY }]}>{emptySubtext}</Text>}
         </>
       )}
     </View>
@@ -111,14 +114,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
-    color: APP_CONSTANTS.COLORS.TEXT.SECONDARY,
     textAlign: 'center',
   },
 });

@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CachedImage from './CachedImage';
 import { APP_CONSTANTS } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type PosterSectionProps = {
   poster?: string;
@@ -16,6 +17,7 @@ function PosterSection({
   renderOverlayButtons,
 }: PosterSectionProps) {
   const insets = useSafeAreaInsets();
+  const colors = useAppColors();
 
   return (
     <View style={styles.posterContainer}>
@@ -26,8 +28,8 @@ function PosterSection({
           resizeMode="cover"
         />
       ) : (
-        <View style={[styles.poster, styles.posterPlaceholder]}>
-          <Icon name="film-outline" size={60} color="#666" />
+        <View style={[styles.poster, styles.posterPlaceholder, { backgroundColor: colors.BACKGROUND.SECONDARY }]}>
+          <Icon name="film-outline" size={60} color={colors.TEXT.TERTIARY} />
         </View>
       )}
       
@@ -38,7 +40,7 @@ function PosterSection({
 
       {/* Fade gradient at bottom of poster */}
       <LinearGradient
-        colors={[APP_CONSTANTS.COLORS.GRADIENT.POSTER_START, APP_CONSTANTS.COLORS.GRADIENT.POSTER_END]}
+        colors={[colors.GRADIENT.POSTER_START, colors.GRADIENT.POSTER_END]}
         style={styles.posterFadeGradient}
         pointerEvents="none"
       />
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   posterPlaceholder: {
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.SECONDARY,
     justifyContent: 'center',
     alignItems: 'center',
   },

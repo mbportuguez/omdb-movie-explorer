@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MovieSummary } from '../api/omdb';
 import CachedImage from './CachedImage';
+import { useAppColors } from '../hooks/useAppColors';
 
 type Props = {
   movie: MovieSummary;
@@ -12,27 +13,29 @@ type Props = {
 };
 
 function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
+  const colors = useAppColors();
+
   return (
-    <Pressable onPress={onPress} style={styles.container}>
-      <View style={styles.posterWrapper}>
+    <Pressable onPress={onPress} style={[styles.container, { backgroundColor: colors.BACKGROUND.SECONDARY }]}>
+      <View style={[styles.posterWrapper, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
         {movie.poster ? (
           <CachedImage source={{ uri: movie.poster }} style={styles.poster} />
         ) : (
           <View style={styles.posterPlaceholder}>
-            <Text style={styles.posterPlaceholderText}>No image</Text>
+            <Text style={[styles.posterPlaceholderText, { color: colors.TEXT.TERTIARY }]}>No image</Text>
           </View>
         )}
       </View>
       <View style={styles.info}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]} numberOfLines={2}>
             {movie.title}
           </Text>
           <Pressable onPress={onToggleFavorite} style={styles.favoriteButton}>
             <Icon
               name={isFavorite ? 'star' : 'star-outline'}
               size={18}
-              color="#ff6b35"
+              color={colors.ACCENT}
             />
           </Pressable>
         </View>
@@ -45,7 +48,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     margin: 8,
-    backgroundColor: '#2a2a2a',
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
   posterWrapper: {
     width: '100%',
     aspectRatio: 2 / 3,
-    backgroundColor: '#1a1a1a',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -74,7 +75,6 @@ const styles = StyleSheet.create({
   },
   posterPlaceholderText: {
     fontSize: 12,
-    color: '#888',
     textAlign: 'center',
   },
   info: {
@@ -89,7 +89,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
   },
   favoriteButton: {
     padding: 4,

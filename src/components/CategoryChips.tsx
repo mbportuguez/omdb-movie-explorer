@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MovieType } from '../api/omdb';
+import { useAppColors } from '../hooks/useAppColors';
 
 type CategoryChipsProps = {
   type: MovieType | undefined;
@@ -15,24 +16,25 @@ const typeChips = [
 ];
 
 export default function CategoryChips({ type, onTypeChange }: CategoryChipsProps) {
+  const colors = useAppColors();
+
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Categories</Text>
+        <Text style={[styles.sectionTitle, { color: colors.TEXT.PRIMARY }]}>Categories</Text>
       </View>
       <View style={styles.categoriesContainer}>
         {typeChips.map((chip, index) => (
           <Pressable
             key={index}
             onPress={() => onTypeChange(chip.value)}
-            style={[styles.categoryChip, type === chip.value && styles.categoryChipActive]}
+            style={[
+              styles.categoryChip,
+              { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY },
+              type === chip.value && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
+            ]}
           >
-            <Text
-              style={[
-                styles.categoryChipText,
-                type === chip.value && styles.categoryChipTextActive,
-              ]}
-            >
+            <Text style={[styles.categoryChipText, { color: colors.TEXT.PRIMARY }]}>
               {chip.label}
             </Text>
           </Pressable>
@@ -53,7 +55,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -67,23 +68,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#2a2a2a',
     borderWidth: 1,
-    borderColor: '#3a3a3a',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryChipActive: {
-    backgroundColor: '#ff6b35',
-    borderColor: '#ff6b35',
-  },
   categoryChipText: {
     fontSize: 14,
-    color: '#fff',
     fontWeight: '500',
-  },
-  categoryChipTextActive: {
-    color: '#fff',
   },
 });
 

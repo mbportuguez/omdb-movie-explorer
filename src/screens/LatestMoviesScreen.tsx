@@ -9,6 +9,7 @@ import MovieCard from '../components/MovieCard';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
 import { useFavorites } from '../context/FavoritesContext';
+import { useAppColors } from '../hooks/useAppColors';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'LatestMovies'>;
 
@@ -16,6 +17,7 @@ function LatestMoviesScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const colors = useAppColors();
 
   const [movies, setMovies] = useState<MovieSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,34 +71,34 @@ function LatestMoviesScreen() {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={APP_CONSTANTS.COLORS.ACCENT} />
-          <Text style={styles.emptyText}>Loading movies...</Text>
+          <ActivityIndicator size="large" color={colors.ACCENT} />
+          <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>Loading movies...</Text>
         </View>
       );
     }
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{error}</Text>
+          <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>{error}</Text>
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>{ERROR_MESSAGES.NO_RESULTS}</Text>
+        <Text style={[styles.emptyText, { color: colors.TEXT.PRIMARY }]}>{ERROR_MESSAGES.NO_RESULTS}</Text>
       </View>
     );
-  }, [loading, error]);
+  }, [loading, error, colors]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
           <View style={styles.iconButton}>
-            <Icon name="close" size={24} color={APP_CONSTANTS.COLORS.TEXT.PRIMARY} />
+            <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
           </View>
         </Pressable>
-        <Text style={styles.title}>Latest Movies</Text>
+        <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]}>Latest Movies</Text>
         <View style={styles.placeholder} />
       </View>
       <FlatList
@@ -124,7 +126,6 @@ function LatestMoviesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
   header: {
     flexDirection: 'row',
@@ -147,7 +148,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   placeholder: {
     width: 40,
@@ -170,7 +170,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',

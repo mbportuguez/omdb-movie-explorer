@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MovieType } from '../api/omdb';
 import { SortBy } from '../types/sort';
+import { useAppColors } from '../hooks/useAppColors';
 
 type SearchBarProps = {
   queryInput: string;
@@ -43,49 +44,53 @@ export default function SearchBar({
 }: SearchBarProps) {
   const searchInputRef = useRef<TextInput>(null);
   const actualInputRef = inputRef || searchInputRef;
+  const colors = useAppColors();
 
   return (
     <View style={styles.searchContainer}>
-      <View style={styles.searchBar} onLayout={onLayout}>
-        <Icon name="search" size={20} color="#888" />
+      <View style={[styles.searchBar, { backgroundColor: colors.BACKGROUND.SECONDARY }]} onLayout={onLayout}>
+        <Icon name="search" size={20} color={colors.TEXT.TERTIARY} />
         <TextInput
           ref={actualInputRef}
           value={queryInput}
           onChangeText={onChangeQuery}
           placeholder="Search movie ...."
-          placeholderTextColor="#888"
-          style={styles.searchInput}
+          placeholderTextColor={colors.TEXT.TERTIARY}
+          style={[styles.searchInput, { color: colors.TEXT.PRIMARY }]}
           returnKeyType="search"
           blurOnSubmit={false}
           autoCorrect={false}
           onFocus={onFocus}
           onBlur={onBlur}
         />
-        <Pressable onPress={onToggleFilters} style={styles.filterIconButton}>
-          <Icon name="options" size={18} color="#fff" />
+        <Pressable onPress={onToggleFilters} style={[styles.filterIconButton, { backgroundColor: colors.BACKGROUND.TERTIARY }]}>
+          <Icon name="options" size={18} color={colors.TEXT.PRIMARY} />
         </Pressable>
       </View>
       {showFilters && (
         <View style={styles.filtersRow}>
           <Pressable
             onPress={onYearPress}
-            style={[styles.filterButton, year && styles.filterButtonActive]}
+            style={[
+              styles.filterButton,
+              { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY },
+              year && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
+            ]}
           >
-            <Text style={[styles.filterButtonText, year && styles.filterButtonTextActive]}>
+            <Text style={[styles.filterButtonText, { color: colors.TEXT.PRIMARY }]}>
               {year || 'Year'}
             </Text>
           </Pressable>
           <View style={styles.sortRow}>
             <Pressable
               onPress={() => onSortChange('relevance')}
-              style={[styles.sortChip, sortBy === 'relevance' && styles.sortChipActive]}
+              style={[
+                styles.sortChip,
+                { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY },
+                sortBy === 'relevance' && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
+              ]}
             >
-              <Text
-                style={[
-                  styles.sortChipText,
-                  sortBy === 'relevance' && styles.sortChipTextActive,
-                ]}
-              >
+              <Text style={[styles.sortChipText, { color: colors.TEXT.PRIMARY }]}>
                 Default
               </Text>
             </Pressable>
@@ -93,16 +98,11 @@ export default function SearchBar({
               onPress={onYearSortToggle}
               style={[
                 styles.sortChip,
-                (sortBy === 'year_desc' || sortBy === 'year_asc') && styles.sortChipActive,
+                { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY },
+                (sortBy === 'year_desc' || sortBy === 'year_asc') && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
               ]}
             >
-              <Text
-                style={[
-                  styles.sortChipText,
-                  (sortBy === 'year_desc' || sortBy === 'year_asc') &&
-                    styles.sortChipTextActive,
-                ]}
-              >
+              <Text style={[styles.sortChipText, { color: colors.TEXT.PRIMARY }]}>
                 Year {sortBy === 'year_desc' ? '↓' : sortBy === 'year_asc' ? '↑' : lastYearSort === 'year_desc' ? '↓' : '↑'}
               </Text>
             </Pressable>
@@ -110,16 +110,11 @@ export default function SearchBar({
               onPress={onTitleSortToggle}
               style={[
                 styles.sortChip,
-                (sortBy === 'title_asc' || sortBy === 'title_desc') && styles.sortChipActive,
+                { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY },
+                (sortBy === 'title_asc' || sortBy === 'title_desc') && { backgroundColor: colors.ACCENT, borderColor: colors.ACCENT },
               ]}
             >
-              <Text
-                style={[
-                  styles.sortChipText,
-                  (sortBy === 'title_asc' || sortBy === 'title_desc') &&
-                    styles.sortChipTextActive,
-                ]}
-              >
+              <Text style={[styles.sortChipText, { color: colors.TEXT.PRIMARY }]}>
                 {sortBy === 'title_asc'
                   ? 'A–Z'
                   : sortBy === 'title_desc'
@@ -144,7 +139,6 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -153,13 +147,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#fff',
   },
   filterIconButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 16,
-    backgroundColor: '#3a3a3a',
   },
   filtersRow: {
     flexDirection: 'row',
@@ -171,21 +163,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: '#2a2a2a',
     borderWidth: 1,
-    borderColor: '#3a3a3a',
-  },
-  filterButtonActive: {
-    backgroundColor: '#ff6b35',
-    borderColor: '#ff6b35',
   },
   filterButtonText: {
     fontSize: 12,
-    color: '#fff',
     fontWeight: '500',
-  },
-  filterButtonTextActive: {
-    color: '#fff',
   },
   sortRow: {
     flexDirection: 'row',
@@ -196,20 +178,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: '#2a2a2a',
     borderWidth: 1,
-    borderColor: '#3a3a3a',
-  },
-  sortChipActive: {
-    backgroundColor: '#ff6b35',
-    borderColor: '#ff6b35',
   },
   sortChipText: {
     fontSize: 11,
-    color: '#fff',
-  },
-  sortChipTextActive: {
-    color: '#fff',
   },
 });
 

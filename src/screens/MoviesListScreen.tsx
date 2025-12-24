@@ -10,6 +10,7 @@ import { useLatestMovies } from '../hooks/useLatestMovies';
 import { useSortToggle } from '../hooks/useSortToggle';
 import { useTypingIndicator } from '../hooks/useTypingIndicator';
 import { useRecentSearches } from '../hooks/useRecentSearches';
+import { useAppColors } from '../hooks/useAppColors';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { APP_CONSTANTS } from '../constants/app';
 import { sortMovies } from '../utils/sortMovies';
@@ -26,6 +27,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'MoviesList'>;
 function MoviesListScreen() {
   const navigation = useNavigation<Nav>();
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
+  const colors = useAppColors();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -118,7 +120,7 @@ function MoviesListScreen() {
   }, [navigation]);
 
   const handleFavoritesPress = useCallback(() => {
-    navigation.navigate('Favorites');
+    navigation.navigate('Profile');
   }, [navigation]);
 
   const handleSelectRecentSearch = useCallback(
@@ -150,7 +152,7 @@ function MoviesListScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <AppHeader onFavoritesPress={handleFavoritesPress} />
@@ -242,7 +244,6 @@ function MoviesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
 });
 

@@ -3,23 +3,25 @@ import { StyleSheet, View, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { APP_CONSTANTS } from '../constants/app';
 import { formatRatingWithReviews } from '../utils/movieUtils';
+import { useAppColors } from '../hooks/useAppColors';
 
 type RatingsSectionProps = {
   rating: number | null;
 };
 
 function RatingsSection({ rating }: RatingsSectionProps) {
+  const colors = useAppColors();
   if (!rating) return null;
 
   return (
     <View style={styles.ratingsRow}>
-      <View style={styles.imdbBadge}>
+      <View style={[styles.imdbBadge, { backgroundColor: colors.IMDB }]}>
         <Text style={styles.imdbText}>IMDB</Text>
         <Text style={styles.imdbRating}>{rating.toFixed(1)}</Text>
       </View>
       <View style={styles.starRating}>
-        <Icon name="star" size={16} color={APP_CONSTANTS.COLORS.IMDB} />
-        <Text style={styles.starText}>
+        <Icon name="star" size={16} color={colors.IMDB} />
+        <Text style={[styles.starText, { color: colors.TEXT.PRIMARY }]}>
           {formatRatingWithReviews(rating)}
         </Text>
       </View>
@@ -37,7 +39,6 @@ const styles = StyleSheet.create({
   imdbBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: APP_CONSTANTS.COLORS.IMDB,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -61,7 +62,6 @@ const styles = StyleSheet.create({
   },
   starText: {
     fontSize: 14,
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     fontWeight: '500',
   },
 });

@@ -1,3 +1,49 @@
+const LIGHT_COLORS = {
+  BACKGROUND: {
+    PRIMARY: '#ffffff',
+    SECONDARY: '#f5f5f5',
+    TERTIARY: '#e0e0e0',
+  },
+  GRADIENT: {
+    POSTER_START: 'rgba(255,255,255,0)',
+    POSTER_END: 'rgba(245,245,245,1)',
+    DETAILS_START: 'rgba(245,245,245,0)',
+    DETAILS_END: 'rgba(245,245,245,1)',
+  },
+  TEXT: {
+    PRIMARY: '#000000',
+    SECONDARY: '#333333',
+    TERTIARY: '#666666',
+  },
+} as const;
+
+const DARK_COLORS = {
+  BACKGROUND: {
+    PRIMARY: '#1a1a1a',
+    SECONDARY: '#2a2a2a',
+    TERTIARY: '#3a3a3a',
+  },
+  GRADIENT: {
+    POSTER_START: 'rgba(0,0,0,0)',
+    POSTER_END: 'rgba(42,42,42,1)',
+    DETAILS_START: 'rgba(42,42,42,0)',
+    DETAILS_END: 'rgba(42,42,42,1)',
+  },
+  TEXT: {
+    PRIMARY: '#ffffff',
+    SECONDARY: '#cccccc',
+    TERTIARY: '#888888',
+  },
+} as const;
+
+export const getAppColors = (isDark: boolean) => ({
+  BACKGROUND: isDark ? DARK_COLORS.BACKGROUND : LIGHT_COLORS.BACKGROUND,
+  GRADIENT: isDark ? DARK_COLORS.GRADIENT : LIGHT_COLORS.GRADIENT,
+  TEXT: isDark ? DARK_COLORS.TEXT : LIGHT_COLORS.TEXT,
+  ACCENT: '#ff6b35',
+  IMDB: '#FFD700',
+});
+
 export const APP_CONSTANTS = {
   SEARCH: {
     MIN_QUERY_LENGTH: 3,
@@ -23,26 +69,7 @@ export const APP_CONSTANTS = {
       DETAILS: 50,
     },
   },
-  COLORS: {
-    BACKGROUND: {
-      PRIMARY: '#1a1a1a',
-      SECONDARY: '#2a2a2a',
-      TERTIARY: '#3a3a3a',
-    },
-    GRADIENT: {
-      POSTER_START: 'rgba(0,0,0,0)',
-      POSTER_END: 'rgba(42,42,42,1)',
-      DETAILS_START: 'rgba(42,42,42,0)',
-      DETAILS_END: 'rgba(42,42,42,1)',
-    },
-    ACCENT: '#ff6b35',
-    TEXT: {
-      PRIMARY: '#fff',
-      SECONDARY: '#ccc',
-      TERTIARY: '#888',
-    },
-    IMDB: '#FFD700',
-  },
+  COLORS: DARK_COLORS,
 } as const;
 
 export const ERROR_MESSAGES = {

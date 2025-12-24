@@ -4,6 +4,7 @@ import FastImage from 'react-native-fast-image';
 import MovieCard from './MovieCard';
 import { MovieSummary } from '../api/omdb';
 import { ERROR_MESSAGES } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type SearchResultsProps = {
   results: MovieSummary[];
@@ -28,6 +29,8 @@ export default function SearchResults({
   isFavorite,
   onEndReached,
 }: SearchResultsProps) {
+  const colors = useAppColors();
+
   // Prefetch first batch of posters when results change
   useEffect(() => {
     if (results.length > 0) {
@@ -66,15 +69,15 @@ export default function SearchResults({
       ListEmptyComponent={
         isLoading && !isUserTyping && results.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator color="#ff6b35" />
+            <ActivityIndicator color={colors.ACCENT} />
           </View>
         ) : error ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{error}</Text>
+            <Text style={[styles.emptyText, { color: colors.TEXT.TERTIARY }]}>{error}</Text>
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{ERROR_MESSAGES.NO_RESULTS}</Text>
+            <Text style={[styles.emptyText, { color: colors.TEXT.TERTIARY }]}>{ERROR_MESSAGES.NO_RESULTS}</Text>
           </View>
         )
       }
@@ -83,7 +86,7 @@ export default function SearchResults({
       ListFooterComponent={
         isFetchingMore ? (
           <View style={styles.footer}>
-            <ActivityIndicator color="#ff6b35" />
+            <ActivityIndicator color={colors.ACCENT} />
           </View>
         ) : null
       }
@@ -110,7 +113,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#888',
   },
   footer: {
     paddingVertical: 20,

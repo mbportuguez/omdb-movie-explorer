@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { APP_CONSTANTS } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type ScreenHeaderProps = {
   title: string;
@@ -11,15 +11,16 @@ type ScreenHeaderProps = {
 
 export default function ScreenHeader({ title, onClose }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
+  const colors = useAppColors();
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
       <Pressable onPress={onClose} style={styles.closeButton}>
         <View style={styles.iconButton}>
-          <Icon name="close" size={24} color={APP_CONSTANTS.COLORS.TEXT.PRIMARY} />
+          <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
         </View>
       </Pressable>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]}>{title}</Text>
       <View style={styles.placeholder} />
     </View>
   );
@@ -47,7 +48,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   placeholder: {
     width: 40,

@@ -16,6 +16,7 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 import { useMovieDetails } from '../hooks/useMovieDetails';
 import { extractImdbRating, parseActors } from '../utils/movieUtils';
 import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 import PosterSection from '../components/PosterSection';
 import MovieDetailsSection from '../components/MovieDetailsSection';
 
@@ -28,6 +29,7 @@ function MovieDetailsScreen() {
   const { imdbID } = route.params;
   const { isFavorite, toggleFavorite } = useFavorites();
   const { movie, loading, error, isOffline } = useMovieDetails(imdbID);
+  const colors = useAppColors();
 
   const imdbRating = useMemo(() => extractImdbRating(movie?.ratings), [movie?.ratings]);
   const actors = useMemo(
@@ -52,7 +54,7 @@ function MovieDetailsScreen() {
       <>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
           <View style={styles.iconButton}>
-            <Icon name="close" size={24} color={APP_CONSTANTS.COLORS.TEXT.PRIMARY} />
+            <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
           </View>
         </Pressable>
         <Pressable onPress={handleToggleFavorite} style={styles.favoriteButton}>
@@ -60,40 +62,40 @@ function MovieDetailsScreen() {
             <Icon 
               name={favorite ? "heart" : "heart-outline"} 
               size={24} 
-              color={favorite ? APP_CONSTANTS.COLORS.ACCENT : APP_CONSTANTS.COLORS.TEXT.PRIMARY} 
+              color={favorite ? colors.ACCENT : colors.TEXT.PRIMARY} 
             />
           </View>
         </Pressable>
       </>
     );
-  }, [movie, isFavorite, handleToggleFavorite, navigation]);
+  }, [movie, isFavorite, handleToggleFavorite, navigation, colors]);
 
   if (loading && !movie) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={APP_CONSTANTS.COLORS.ACCENT} />
-        <Text style={styles.loadingText}>Loading movie details...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
+        <ActivityIndicator size="large" color={colors.ACCENT} />
+        <Text style={[styles.loadingText, { color: colors.TEXT.PRIMARY }]}>Loading movie details...</Text>
       </View>
     );
   }
 
   if (error || !movie) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || ERROR_MESSAGES.FAILED_TO_LOAD}</Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
+        <Text style={[styles.errorText, { color: colors.ACCENT }]}>{error || ERROR_MESSAGES.FAILED_TO_LOAD}</Text>
+        <Pressable onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: colors.ACCENT }]}>
+          <Text style={[styles.backButtonText, { color: colors.TEXT.PRIMARY }]}>Go Back</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {isOffline && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>{ERROR_MESSAGES.OFFLINE_MODE}</Text>
+        <View style={[styles.offlineBanner, { backgroundColor: colors.ACCENT }]}>
+          <Text style={[styles.offlineText, { color: colors.TEXT.PRIMARY }]}>{ERROR_MESSAGES.OFFLINE_MODE}</Text>
         </View>
       )}
       <ScrollView 
@@ -114,7 +116,6 @@ function MovieDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
   scrollView: {
     flex: 1,
@@ -126,27 +127,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   errorText: {
     fontSize: 16,
-    color: APP_CONSTANTS.COLORS.ACCENT,
     textAlign: 'center',
     marginBottom: 20,
   },
   backButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: APP_CONSTANTS.COLORS.ACCENT,
     borderRadius: 8,
   },
   backButtonText: {
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -165,13 +161,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   offlineBanner: {
-    backgroundColor: APP_CONSTANTS.COLORS.ACCENT,
     paddingVertical: 8,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
   offlineText: {
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     fontSize: 12,
     fontWeight: '500',
   },

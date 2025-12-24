@@ -8,12 +8,14 @@ import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
 import ScreenHeader from '../components/ScreenHeader';
 import MovieGrid from '../components/MovieGrid';
 import { MovieSummary } from '../api/omdb';
+import { useAppColors } from '../hooks/useAppColors';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Favorites'>;
 
 function FavoritesScreen() {
   const navigation = useNavigation<Nav>();
   const { favorites, toggleFavorite, isFavorite, loading } = useFavorites();
+  const colors = useAppColors();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -34,7 +36,7 @@ function FavoritesScreen() {
   }, [favorites]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
       <ScreenHeader title="Favorites" onClose={() => navigation.goBack()} />
       <MovieGrid
         movies={favoritesList}
@@ -52,7 +54,6 @@ function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
 });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { APP_CONSTANTS } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type RecentSearchesProps = {
   searches: string[];
@@ -18,17 +18,19 @@ export default function RecentSearches({
   onClearAll,
   top,
 }: RecentSearchesProps) {
+  const colors = useAppColors();
+
   if (searches.length === 0) {
     return null;
   }
 
   return (
     <View style={[styles.floatingContainer, { top }]} pointerEvents="box-none">
-      <View style={styles.dropdown} pointerEvents="auto">
-        <View style={styles.header}>
-          <Text style={styles.title}>Recent Searches</Text>
+      <View style={[styles.dropdown, { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.BACKGROUND.TERTIARY }]} pointerEvents="auto">
+        <View style={[styles.header, { borderBottomColor: colors.BACKGROUND.TERTIARY }]}>
+          <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]}>Recent Searches</Text>
           <Pressable onPress={onClearAll} style={styles.clearButton}>
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={[styles.clearText, { color: colors.ACCENT }]}>Clear</Text>
           </Pressable>
         </View>
         <ScrollView
@@ -40,10 +42,10 @@ export default function RecentSearches({
             <Pressable
               key={`${search}-${index}`}
               onPress={() => onSelectSearch(search)}
-              style={styles.searchItem}
+              style={[styles.searchItem, { borderBottomColor: colors.BACKGROUND.TERTIARY }]}
             >
-              <Icon name="time-outline" size={18} color={APP_CONSTANTS.COLORS.TEXT.SECONDARY} />
-              <Text style={styles.searchText} numberOfLines={1}>
+              <Icon name="time-outline" size={18} color={colors.TEXT.SECONDARY} />
+              <Text style={[styles.searchText, { color: colors.TEXT.PRIMARY }]} numberOfLines={1}>
                 {search}
               </Text>
               <Pressable
@@ -53,7 +55,7 @@ export default function RecentSearches({
                 }}
                 style={styles.removeButton}
               >
-                <Icon name="close" size={16} color={APP_CONSTANTS.COLORS.TEXT.TERTIARY} />
+                <Icon name="close" size={16} color={colors.TEXT.TERTIARY} />
               </Pressable>
             </Pressable>
           ))}
@@ -72,10 +74,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   dropdown: {
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.SECONDARY,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: APP_CONSTANTS.COLORS.BACKGROUND.TERTIARY,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -95,12 +95,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: APP_CONSTANTS.COLORS.BACKGROUND.TERTIARY,
   },
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   clearButton: {
     paddingHorizontal: 8,
@@ -108,7 +106,6 @@ const styles = StyleSheet.create({
   },
   clearText: {
     fontSize: 12,
-    color: APP_CONSTANTS.COLORS.ACCENT,
     fontWeight: '500',
   },
   scrollView: {
@@ -121,12 +118,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: APP_CONSTANTS.COLORS.BACKGROUND.TERTIARY,
   },
   searchText: {
     flex: 1,
     fontSize: 14,
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   removeButton: {
     padding: 4,

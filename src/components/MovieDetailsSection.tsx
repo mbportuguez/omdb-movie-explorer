@@ -5,6 +5,7 @@ import { MovieDetails } from '../api/omdb';
 import { APP_CONSTANTS } from '../constants/app';
 import RatingsSection from './RatingsSection';
 import { extractImdbRating, parseCommaSeparated } from '../utils/movieUtils';
+import { useAppColors } from '../hooks/useAppColors';
 
 type MovieDetailsSectionProps = {
   movie: MovieDetails;
@@ -13,6 +14,7 @@ type MovieDetailsSectionProps = {
 };
 
 function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps) {
+  const colors = useAppColors();
   const genres = parseCommaSeparated(movie.genre);
 
   const detailItems = [
@@ -24,7 +26,7 @@ function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps
 
   return (
     <LinearGradient
-      colors={['rgba(42,42,42,0.0)', 'rgba(42,42,42,1)']}
+      colors={[colors.GRADIENT.DETAILS_START, colors.GRADIENT.DETAILS_END]}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.infoContainer}
@@ -34,14 +36,14 @@ function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps
         <RatingsSection rating={rating} />
 
         {/* Title */}
-        <Text style={styles.title}>{movie.title}</Text>
+        <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]}>{movie.title}</Text>
 
         {/* Genres */}
         {genres.length > 0 && (
           <View style={styles.genresContainer}>
             {genres.map((genre, idx) => (
-              <View key={idx} style={styles.genreChip}>
-                <Text style={styles.genreText}>{genre}</Text>
+              <View key={idx} style={[styles.genreChip, { backgroundColor: colors.BACKGROUND.TERTIARY, borderColor: '#4a4a4a' }]}>
+                <Text style={[styles.genreText, { color: colors.TEXT.PRIMARY }]}>{genre}</Text>
               </View>
             ))}
           </View>
@@ -51,7 +53,7 @@ function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps
         {actors.length > 0 && (
           <View style={styles.castContainer}>
             {actors.map((actor, idx) => (
-              <Text key={idx} style={styles.castText}>
+              <Text key={idx} style={[styles.castText, { color: colors.TEXT.SECONDARY }]}>
                 {actor.toUpperCase()}
               </Text>
             ))}
@@ -61,7 +63,7 @@ function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps
         {/* Synopsis */}
         {movie.plot && (
           <View style={styles.synopsisSection}>
-            <Text style={styles.synopsisText}>{movie.plot}</Text>
+            <Text style={[styles.synopsisText, { color: colors.TEXT.SECONDARY }]}>{movie.plot}</Text>
           </View>
         )}
 
@@ -70,8 +72,8 @@ function MovieDetailsSection({ movie, rating, actors }: MovieDetailsSectionProps
           <View style={styles.detailsSection}>
             {detailItems.map((item, idx) => (
               <View key={idx} style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{item.label}</Text>
-                <Text style={styles.detailValue}>{item.value}</Text>
+                <Text style={[styles.detailLabel, { color: colors.TEXT.TERTIARY }]}>{item.label}</Text>
+                <Text style={[styles.detailValue, { color: colors.TEXT.PRIMARY }]}>{item.value}</Text>
               </View>
             ))}
           </View>
@@ -96,7 +98,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     marginBottom: 16,
     lineHeight: 34,
   },
@@ -109,7 +110,6 @@ const styles = StyleSheet.create({
   },
   castText: {
     fontSize: 12,
-    color: APP_CONSTANTS.COLORS.TEXT.SECONDARY,
     fontWeight: '500',
     letterSpacing: 0.5,
   },
@@ -122,14 +122,12 @@ const styles = StyleSheet.create({
   genreChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.TERTIARY,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#4a4a4a',
   },
   genreText: {
     fontSize: 13,
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
     fontWeight: '500',
   },
   synopsisSection: {
@@ -138,7 +136,6 @@ const styles = StyleSheet.create({
   synopsisText: {
     fontSize: 15,
     lineHeight: 24,
-    color: APP_CONSTANTS.COLORS.TEXT.SECONDARY,
   },
   detailsSection: {
     gap: 12,
@@ -149,14 +146,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: APP_CONSTANTS.COLORS.TEXT.TERTIARY,
     fontWeight: '600',
     minWidth: 80,
   },
   detailValue: {
     flex: 1,
     fontSize: 14,
-    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
 });
 
