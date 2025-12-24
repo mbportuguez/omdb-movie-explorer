@@ -60,19 +60,20 @@ export default function SearchResults({
 
   const keyExtractor = useCallback((item: MovieSummary) => item.imdbID, []);
 
-  return (
-    <FlatList
-      data={results}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      numColumns={2}
-      columnWrapperStyle={styles.row}
-      contentContainerStyle={styles.gridContainer}
-      keyboardShouldPersistTaps="handled"
-      initialNumToRender={8}
-      windowSize={7}
-      maxToRenderPerBatch={8}
-      removeClippedSubviews
+          return (
+            <FlatList
+              testID="search-results"
+              data={results}
+              keyExtractor={keyExtractor}
+              renderItem={renderItem}
+              numColumns={2}
+              columnWrapperStyle={styles.row}
+              contentContainerStyle={styles.gridContainer}
+              keyboardShouldPersistTaps="handled"
+              initialNumToRender={8}
+              windowSize={7}
+              maxToRenderPerBatch={8}
+              removeClippedSubviews
       ListEmptyComponent={
         isLoading && !isUserTyping && results.length === 0 ? (
           <View style={styles.loadingContainer}>

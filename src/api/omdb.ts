@@ -20,8 +20,9 @@ export type MovieDetails = MovieSummary & {
 
 import { API_CONFIG } from '../config/api';
 
-const API_KEY = API_CONFIG.API_KEY;
 const BASE_URL = API_CONFIG.BASE_URL;
+
+const getApiKey = () => API_CONFIG.API_KEY;
 
 type SearchParams = {
   query: string;
@@ -70,8 +71,19 @@ const toMovieSummary = (m: OmdbSearchItem): MovieSummary => ({
 
 export async function searchMovies(params: SearchParams, options?: { signal?: AbortSignal }) {
   const { query, page = 1, year, type } = params;
+  let apiKey: string;
+  try {
+    apiKey = getApiKey();
+  } catch (error) {
+    return {
+      items: [] as MovieSummary[],
+      totalResults: 0,
+      totalPages: 0,
+      error: error instanceof Error ? error.message : 'API key not configured',
+    };
+  }
   const searchParams = new URLSearchParams();
-  searchParams.append('apikey', API_KEY);
+  searchParams.append('apikey', apiKey);
   searchParams.append('s', query);
   searchParams.append('page', String(page));
   if (type) searchParams.append('type', type);
@@ -126,8 +138,14 @@ export async function searchMovies(params: SearchParams, options?: { signal?: Ab
 }
 
 export async function fetchMovieDetails(imdbID: string): Promise<MovieDetails | null> {
+  let apiKey: string;
+  try {
+    apiKey = getApiKey();
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'API key not configured');
+  }
   const searchParams = new URLSearchParams();
-  searchParams.append('apikey', API_KEY);
+  searchParams.append('apikey', apiKey);
   searchParams.append('i', imdbID);
   searchParams.append('plot', 'full');
 

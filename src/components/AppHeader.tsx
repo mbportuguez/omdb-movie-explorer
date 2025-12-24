@@ -16,7 +16,7 @@ const AppHeader = React.memo(function AppHeader({ onFavoritesPress }: AppHeaderP
         <Text style={[styles.welcomeText, { color: colors.TEXT.PRIMARY }]}>Welcome Joko 👋</Text>
         <Text style={[styles.subtitleText, { color: colors.TEXT.SECONDARY }]}>Let's relax and watch a movie !</Text>
       </View>
-      <Pressable onPress={onFavoritesPress} style={styles.profileButton}>
+              <Pressable testID="profile-button" onPress={onFavoritesPress} style={styles.profileButton}>
         <View style={[styles.profileIcon, { backgroundColor: colors.BACKGROUND.SECONDARY, borderColor: colors.ACCENT }]}>
           <Icon name="person-circle" size={40} color={colors.ACCENT} />
         </View>

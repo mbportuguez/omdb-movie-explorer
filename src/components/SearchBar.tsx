@@ -50,19 +50,20 @@ export default function SearchBar({
     <View style={styles.searchContainer}>
       <View style={[styles.searchBar, { backgroundColor: colors.BACKGROUND.SECONDARY }]} onLayout={onLayout}>
         <Icon name="search" size={20} color={colors.TEXT.TERTIARY} />
-        <TextInput
-          ref={actualInputRef}
-          value={queryInput}
-          onChangeText={onChangeQuery}
-          placeholder="Search movie ...."
-          placeholderTextColor={colors.TEXT.TERTIARY}
-          style={[styles.searchInput, { color: colors.TEXT.PRIMARY }]}
-          returnKeyType="search"
-          blurOnSubmit={false}
-          autoCorrect={false}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        />
+                <TextInput
+                  testID="search-input"
+                  ref={actualInputRef}
+                  value={queryInput}
+                  onChangeText={onChangeQuery}
+                  placeholder="Search movie ...."
+                  placeholderTextColor={colors.TEXT.TERTIARY}
+                  style={[styles.searchInput, { color: colors.TEXT.PRIMARY }]}
+                  returnKeyType="search"
+                  blurOnSubmit={false}
+                  autoCorrect={false}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
         <Pressable onPress={onToggleFilters} style={[styles.filterIconButton, { backgroundColor: colors.BACKGROUND.TERTIARY }]}>
           <Icon name="options" size={18} color={colors.TEXT.PRIMARY} />
         </Pressable>

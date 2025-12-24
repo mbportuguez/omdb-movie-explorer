@@ -47,3 +47,4 @@ export function useLatestMovies() {
   return { movies, loading, error };
 }
 
+

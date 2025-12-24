@@ -25,9 +25,9 @@ function ProfileScreen() {
     await setTheme(value ? 'dark' : 'light');
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
-      <ScreenHeader title="Profile" onClose={() => navigation.goBack()} />
+          return (
+            <View testID="profile-screen" style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
+              <ScreenHeader title="Profile" onClose={() => navigation.goBack()} />
 
       <View style={styles.content}>
         <View style={[styles.profileSection, { borderBottomColor: colors.BACKGROUND.TERTIARY }]}>
@@ -52,6 +52,7 @@ function ProfileScreen() {
               </View>
             </View>
             <Switch
+              testID="dark-mode-switch"
               value={isDark}
               onValueChange={handleThemeChange}
               trackColor={{ false: colors.BACKGROUND.TERTIARY, true: colors.ACCENT }}

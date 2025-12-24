@@ -16,7 +16,11 @@ const MovieCard = React.memo(function MovieCard({ movie, onPress, onToggleFavori
   const colors = useAppColors();
 
   return (
-    <Pressable onPress={onPress} style={[styles.container, { backgroundColor: colors.BACKGROUND.SECONDARY }]}>
+    <Pressable 
+      testID={`movie-card-${movie.imdbID}`}
+      onPress={onPress} 
+      style={[styles.container, { backgroundColor: colors.BACKGROUND.SECONDARY }]}
+    >
       <View style={[styles.posterWrapper, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
         {movie.poster ? (
           <CachedImage source={{ uri: movie.poster }} style={styles.poster} />

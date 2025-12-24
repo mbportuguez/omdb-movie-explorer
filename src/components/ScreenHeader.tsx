@@ -15,11 +15,11 @@ const ScreenHeader = React.memo(function ScreenHeader({ title, onClose }: Screen
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-      <Pressable onPress={onClose} style={styles.closeButton}>
-        <View style={styles.iconButton}>
-          <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
-        </View>
-      </Pressable>
+              <Pressable testID="close-button" onPress={onClose} style={styles.closeButton}>
+                <View style={styles.iconButton}>
+                  <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
+                </View>
+              </Pressable>
       <Text style={[styles.title, { color: colors.TEXT.PRIMARY }]}>{title}</Text>
       <View style={styles.placeholder} />
     </View>

@@ -35,9 +35,9 @@ function FavoritesScreen() {
     );
   }, [favorites]);
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
-      <ScreenHeader title="Favorites" onClose={() => navigation.goBack()} />
+          return (
+            <View testID="favorites-screen" style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
+              <ScreenHeader title="Favorites" onClose={() => navigation.goBack()} />
       <MovieGrid
         movies={favoritesList}
         isLoading={loading}

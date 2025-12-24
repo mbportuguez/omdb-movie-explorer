@@ -52,12 +52,12 @@ function MovieDetailsScreen() {
     const favorite = movie ? isFavorite(movie.imdbID) : false;
     return (
       <>
-        <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
+        <Pressable testID="close-button" onPress={() => navigation.goBack()} style={styles.closeButton}>
           <View style={styles.iconButton}>
             <Icon name="close" size={24} color="#ffffff" />
           </View>
         </Pressable>
-        <Pressable onPress={handleToggleFavorite} style={styles.favoriteButton}>
+        <Pressable testID="favorite-button" onPress={handleToggleFavorite} style={styles.favoriteButton}>
           <View style={styles.iconButton}>
             <Icon 
               name={favorite ? "heart" : "heart-outline"} 
@@ -90,9 +90,9 @@ function MovieDetailsScreen() {
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+          return (
+            <View testID="movie-details-screen" style={[styles.container, { backgroundColor: colors.BACKGROUND.PRIMARY }]}>
+              <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {isOffline && (
         <View style={[styles.offlineBanner, { backgroundColor: colors.ACCENT }]}>
           <Text style={[styles.offlineText, { color: colors.TEXT.PRIMARY }]}>{ERROR_MESSAGES.OFFLINE_MODE}</Text>

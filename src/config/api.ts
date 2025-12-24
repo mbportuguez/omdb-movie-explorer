@@ -10,8 +10,19 @@
 
 import Config from 'react-native-config';
 
+let cachedApiKey: string | null = null;
+
 const getApiKey = (): string => {
-  const envKey = Config.OMDB_API_KEY;
+  if (cachedApiKey !== null) {
+    return cachedApiKey;
+  }
+
+  let envKey: string | undefined;
+  try {
+    envKey = Config.OMDB_API_KEY;
+  } catch (error) {
+    console.warn('Failed to read OMDB_API_KEY from react-native-config:', error);
+  }
   
   // Debug logging in development
   if (__DEV__) {
@@ -19,17 +30,20 @@ const getApiKey = (): string => {
   }
   
   if (!envKey) {
-    throw new Error(
-      'OMDB_API_KEY environment variable is not set. ' +
-      'Please create a .env file in the root directory with: OMDB_API_KEY=your_api_key_here'
-    );
+    const errorMsg = 'OMDB_API_KEY environment variable is not set. ' +
+      'Please create a .env file in the root directory with: OMDB_API_KEY=your_api_key_here';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
   
+  cachedApiKey = envKey;
   return envKey;
 };
 
 export const API_CONFIG = {
-  API_KEY: getApiKey(),
+  get API_KEY() {
+    return getApiKey();
+  },
   BASE_URL: 'https://www.omdbapi.com/',
 } as const;
 
