@@ -27,7 +27,7 @@ function MovieDetailsScreen() {
   const route = useRoute<Route>();
   const { imdbID } = route.params;
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { movie, loading, error } = useMovieDetails(imdbID);
+  const { movie, loading, error, isOffline } = useMovieDetails(imdbID);
 
   const imdbRating = useMemo(() => extractImdbRating(movie?.ratings), [movie?.ratings]);
   const actors = useMemo(
@@ -68,7 +68,7 @@ function MovieDetailsScreen() {
     );
   }, [movie, isFavorite, handleToggleFavorite, navigation]);
 
-  if (loading) {
+  if (loading && !movie) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={APP_CONSTANTS.COLORS.ACCENT} />
@@ -91,6 +91,11 @@ function MovieDetailsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>{ERROR_MESSAGES.OFFLINE_MODE}</Text>
+        </View>
+      )}
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollContent}
@@ -158,6 +163,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  offlineBanner: {
+    backgroundColor: APP_CONSTANTS.COLORS.ACCENT,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  offlineText: {
+    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

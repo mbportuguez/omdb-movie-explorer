@@ -52,5 +52,6 @@ export const ERROR_MESSAGES = {
   FAILED_TO_SEARCH: 'Failed to search',
   NO_RESULTS: 'No results found',
   NO_FAVORITES: 'No favorite movies yet',
+  OFFLINE_MODE: 'You are offline. Showing cached data.',
 } as const;
 
