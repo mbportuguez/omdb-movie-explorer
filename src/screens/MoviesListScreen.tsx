@@ -1,23 +1,16 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { searchMovies, MovieSummary, MovieType } from '../api/omdb';
+import { MovieType } from '../api/omdb';
 import { useFavorites } from '../context/FavoritesContext';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useMovieSearch } from '../hooks/useMovieSearch';
+import { useLatestMovies } from '../hooks/useLatestMovies';
+import { useSortToggle } from '../hooks/useSortToggle';
 import { useTypingIndicator } from '../hooks/useTypingIndicator';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
-import { SortBy, LastYearSort, LastTitleSort } from '../types/sort';
+import { APP_CONSTANTS } from '../constants/app';
 import { sortMovies } from '../utils/sortMovies';
 import AppHeader from '../components/AppHeader';
 import SearchBar from '../components/SearchBar';
@@ -42,17 +35,19 @@ function MoviesListScreen() {
   const debouncedQuery = useDebouncedValue(queryInput, APP_CONSTANTS.SEARCH.DEBOUNCE_DELAY_MS);
   const [type, setType] = useState<MovieType | undefined>(undefined);
   const [year, setYear] = useState('');
-  const [sortBy, setSortBy] = useState<SortBy>('relevance');
-  const [lastYearSort, setLastYearSort] = useState<LastYearSort>('year_desc');
-  const [lastTitleSort, setLastTitleSort] = useState<LastTitleSort>('title_asc');
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const { isUserTyping, handleTyping } = useTypingIndicator();
-
-  const [latestMovies, setLatestMovies] = useState<MovieSummary[]>([]);
-  const [isLoadingLatest, setIsLoadingLatest] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { movies: latestMovies, loading: isLoadingLatest, error: latestError } = useLatestMovies();
+  const {
+    sortBy,
+    setSortBy,
+    lastYearSort,
+    lastTitleSort,
+    handleYearSortToggle,
+    handleTitleSortToggle,
+  } = useSortToggle();
 
   const {
     searchResults,
@@ -64,7 +59,7 @@ function MoviesListScreen() {
     debouncedQuery,
     type,
     year,
-    onError: setError,
+    onError: () => {},
   });
 
   const handleChangeQuery = useCallback(
@@ -77,64 +72,41 @@ function MoviesListScreen() {
 
   const favoritesList = useMemo(() => Object.values(favorites), [favorites]);
 
-  useEffect(() => {
-    const loadLatest = async () => {
-      setIsLoadingLatest(true);
-      setError(null);
-      try {
-        const result = await searchMovies({
-          query: APP_CONSTANTS.MOVIES.DEFAULT_QUERY,
-          page: APP_CONSTANTS.PAGINATION.INITIAL_PAGE,
-          type: 'movie',
-        });
-        if (result.error) {
-          setError(result.error);
-        } else {
-          setLatestMovies(result.items.slice(0, APP_CONSTANTS.MOVIES.LATEST_COUNT));
-        }
-      } catch (err) {
-        setError(ERROR_MESSAGES.FAILED_TO_LOAD);
-      } finally {
-        setIsLoadingLatest(false);
-      }
-    };
-    loadLatest();
-  }, []);
-
   const sortedSearchResults = useMemo(
     () => sortMovies(searchResults, sortBy),
     [searchResults, sortBy],
   );
 
-  const handleYearSortToggle = useCallback(() => {
-    if (sortBy === 'year_desc' || sortBy === 'year_asc') {
-      const next = sortBy === 'year_desc' ? 'year_asc' : 'year_desc';
-      setSortBy(next);
-      setLastYearSort(next);
-    } else {
-      setSortBy(lastYearSort);
-    }
-  }, [sortBy, lastYearSort]);
+  const showSearchResults = useMemo(
+    () => debouncedQuery.trim().length >= APP_CONSTANTS.SEARCH.MIN_QUERY_LENGTH,
+    [debouncedQuery],
+  );
 
-  const handleTitleSortToggle = useCallback(() => {
-    if (sortBy === 'title_asc' || sortBy === 'title_desc') {
-      const next = sortBy === 'title_asc' ? 'title_desc' : 'title_asc';
-      setSortBy(next);
-      setLastTitleSort(next);
-    } else {
-      setSortBy(lastTitleSort);
-    }
-  }, [sortBy, lastTitleSort]);
+  const handleMoviePress = useCallback(
+    (imdbID: string) => {
+      navigation.navigate('MovieDetails', { imdbID });
+    },
+    [navigation],
+  );
 
-  const showSearchResults =
-    debouncedQuery.trim().length >= APP_CONSTANTS.SEARCH.MIN_QUERY_LENGTH;
+  const handleViewAllLatest = useCallback(() => {
+    navigation.navigate('LatestMovies');
+  }, [navigation]);
+
+  const handleViewAllFavorites = useCallback(() => {
+    navigation.navigate('Favorites');
+  }, [navigation]);
+
+  const handleFavoritesPress = useCallback(() => {
+    navigation.navigate('Favorites');
+  }, [navigation]);
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <AppHeader onFavoritesPress={() => navigation.navigate('Favorites')} />
+      <AppHeader onFavoritesPress={handleFavoritesPress} />
 
       <SearchBar
         queryInput={queryInput}
@@ -158,16 +130,18 @@ function MoviesListScreen() {
           isLoadingLatest={isLoadingLatest}
           latestMovies={latestMovies}
           favoritesList={favoritesList}
-          onMoviePress={(imdbID) => navigation.navigate('MovieDetails', { imdbID })}
+          onMoviePress={handleMoviePress}
+          onViewAllLatest={handleViewAllLatest}
+          onViewAllFavorites={handleViewAllFavorites}
         />
       ) : (
         <SearchResults
           results={sortedSearchResults}
           isLoading={isLoadingSearch}
           isUserTyping={isUserTyping}
-          error={searchError || error}
+          error={searchError || latestError}
           isFetchingMore={isFetchingMore}
-          onMoviePress={(imdbID) => navigation.navigate('MovieDetails', { imdbID })}
+          onMoviePress={handleMoviePress}
           onToggleFavorite={toggleFavorite}
           isFavorite={isFavorite}
           onEndReached={loadMoreSearchResults}
@@ -187,27 +161,6 @@ function MoviesListScreen() {
           setShowYearPicker(false);
         }}
       />
-
-      <View style={styles.bottomNav}>
-        <Pressable style={[styles.navItem, styles.navItemActive]}>
-          <View style={styles.navIconContainer}>
-            <Icon name="film" size={24} color="#fff" />
-          </View>
-          <Text style={[styles.navLabel, styles.navLabelActive]}>Movie</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Icon name="pricetag" size={24} color="#888" />
-        </Pressable>
-        <Pressable
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Favorites')}
-        >
-          <Icon name="bookmark" size={24} color="#888" />
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Icon name="person" size={24} color="#888" />
-        </Pressable>
-      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -215,42 +168,7 @@ function MoviesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
-    borderTopWidth: 1,
-    borderTopColor: '#3a3a3a',
-  },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  navItemActive: {
-    backgroundColor: '#ff6b35',
-    borderRadius: 12,
-  },
-  navIconContainer: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
-  },
-  navLabelActive: {
-    color: '#fff',
-    fontWeight: '600',
+    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
 });
 
