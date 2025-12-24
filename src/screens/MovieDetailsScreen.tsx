@@ -54,7 +54,7 @@ function MovieDetailsScreen() {
       <>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
           <View style={styles.iconButton}>
-            <Icon name="close" size={24} color={colors.TEXT.PRIMARY} />
+            <Icon name="close" size={24} color="#ffffff" />
           </View>
         </Pressable>
         <Pressable onPress={handleToggleFavorite} style={styles.favoriteButton}>
@@ -62,7 +62,7 @@ function MovieDetailsScreen() {
             <Icon 
               name={favorite ? "heart" : "heart-outline"} 
               size={24} 
-              color={favorite ? colors.ACCENT : colors.TEXT.PRIMARY} 
+              color={favorite ? colors.ACCENT : "#ffffff"} 
             />
           </View>
         </Pressable>
