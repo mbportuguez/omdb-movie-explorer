@@ -12,11 +12,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { searchMovies, MovieSummary, MovieType } from '../api/omdb';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import MovieCard from '../components/MovieCard';
+import HorizontalMovieCard from '../components/HorizontalMovieCard';
 import { useFavorites } from '../context/FavoritesContext';
 import { useSearch } from '../context/SearchContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
@@ -25,191 +27,106 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'MoviesList'>;
 
 function MoviesListScreen() {
   const navigation = useNavigation<Nav>();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const { search, setSearch } = useSearch();
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => navigation.navigate('Favorites')}
-          style={styles.headerButton}
-        >
-          <Text style={styles.headerButtonText}>❤️</Text>
-        </Pressable>
-      ),
+      headerShown: false,
     });
   }, [navigation]);
 
-  const [queryInput, setQueryInput] = useState(search.query);
-  const [type, setType] = useState<MovieType | undefined>(search.type as MovieType | undefined);
-  const [year, setYear] = useState(search.year ?? '');
+  const [queryInput, setQueryInput] = useState('');
+  const [type, setType] = useState<MovieType | undefined>(undefined);
+  const [year, setYear] = useState('');
   const [sortBy, setSortBy] = useState<
     'relevance' | 'year_asc' | 'year_desc' | 'title_asc' | 'title_desc'
   >('relevance');
   const [lastYearSort, setLastYearSort] = useState<'year_asc' | 'year_desc'>('year_desc');
   const [lastTitleSort, setLastTitleSort] = useState<'title_asc' | 'title_desc'>('title_asc');
-  const [showFilters, setShowFilters] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const debouncedQuery = useDebouncedValue(queryInput, 600);
 
-  const [items, setItems] = useState<MovieSummary[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [latestMovies, setLatestMovies] = useState<MovieSummary[]>([]);
+  const [searchResults, setSearchResults] = useState<MovieSummary[]>([]);
+  const [isLoadingLatest, setIsLoadingLatest] = useState(false);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastQuery, setLastQuery] = useState('');
-  const lastFiltersRef = useRef<{ query: string; type?: MovieType; year?: string }>({
-    query: '',
-  });
 
-  const hasMore = page < totalPages;
-  const loadMoreLockRef = useRef(false);
-
-  const fetchPageRaw = useCallback(
-    async (query: string, pageToLoad: number) => {
-      const trimmed = query.trim();
-      const normalizedYear = year.trim();
-      return searchMovies({
-        query: trimmed,
-        page: pageToLoad,
-        type,
-        year: normalizedYear.length === 4 ? normalizedYear : undefined,
-      });
-    },
-    [type, year],
-  );
-
-  const loadFirstPage = useCallback(
-    async (query: string) => {
-      const q = query.trim();
-      if (q.length < 3) {
-        setItems([]);
-        setPage(1);
-        setTotalPages(0);
-        setError(null);
-        setLastQuery('');
-        lastFiltersRef.current = { query: '' };
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const result = await fetchPageRaw(q, 1);
-        setItems(result.items);
-        setPage(1);
-        setTotalPages(result.totalPages);
-        setLastQuery(q);
-        const normalizedYear = year.trim() || undefined;
-        lastFiltersRef.current = { query: q, type, year: normalizedYear };
-        setSearch({
-          query: q,
-          type,
-          year: normalizedYear,
-        });
-      } catch (e) {
-        setError('Failed to load movies');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [fetchPageRaw, setSearch, type, year],
-  );
-
-  const loadMore = useCallback(async () => {
-    if (loadMoreLockRef.current) return;
-    if (!hasMore || isLoading || isFetchingMore || !lastQuery) return;
-
-    loadMoreLockRef.current = true;
-    setIsFetchingMore(true);
-    setError(null);
-
-    try {
-      const nextPage = page + 1;
-      const result = await fetchPageRaw(lastQuery, nextPage);
-
-      setItems(prev => {
-        const seen = new Set(prev.map(m => m.imdbID));
-        return [...prev, ...result.items.filter(m => !seen.has(m.imdbID))];
-      });
-
-      setPage(nextPage);
-      setTotalPages(result.totalPages);
-    } catch (e) {
-      setError('Failed to load more');
-    } finally {
-      setIsFetchingMore(false);
-      setTimeout(() => {
-        loadMoreLockRef.current = false;
-      }, 200);
-    }
-  }, [fetchPageRaw, hasMore, isFetchingMore, isLoading, lastQuery, page]);
-
-  const onRefresh = useCallback(async () => {
-    if (!lastQuery) return;
-    setIsRefreshing(true);
-    await loadFirstPage(lastQuery);
-    setIsRefreshing(false);
-  }, [lastQuery, loadFirstPage]);
+  const favoritesList = useMemo(() => Object.values(favorites), [favorites]);
 
   useEffect(() => {
-    const q = debouncedQuery.trim();
-    if (q.length < 3) {
-      lastFiltersRef.current = { query: '' };
-      // keep existing clearing logic in loadFirstPage for safety
-      loadFirstPage('');
+    const loadLatest = async () => {
+      setIsLoadingLatest(true);
+      setError(null);
+      try {
+        const result = await searchMovies({ query: 'movie', page: 1, type: 'movie' });
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setLatestMovies(result.items.slice(0, 10));
+        }
+      } catch (err) {
+        setError('Failed to load movies');
+      } finally {
+        setIsLoadingLatest(false);
+      }
+    };
+    loadLatest();
+  }, []);
+
+  useEffect(() => {
+    const trimmed = debouncedQuery.trim();
+    if (trimmed.length < 3) {
+      setSearchResults([]);
       return;
     }
-    // Check if filters changed (query, type, or year)
-    const normalizedYear = year.trim() || undefined;
-    const currentFilters = { query: q, type, year: normalizedYear };
-    const lastFilters = lastFiltersRef.current;
-    if (
-      lastFilters.query === currentFilters.query &&
-      lastFilters.type === currentFilters.type &&
-      lastFilters.year === currentFilters.year
-    ) {
-      return;
-    }
-    loadFirstPage(debouncedQuery);
-  }, [debouncedQuery, type, year, lastQuery, loadFirstPage]);
 
-  const onEndReached = () => {
-    loadMore();
-  };
+    const search = async () => {
+      setIsLoadingSearch(true);
+      setError(null);
+      try {
+        const normalizedYear = year.trim();
+        const result = await searchMovies({
+          query: trimmed,
+          page: 1,
+          type,
+          year: normalizedYear.length === 4 ? normalizedYear : undefined,
+        });
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setSearchResults(result.items);
+        }
+      } catch (err) {
+        setError('Failed to search');
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    };
+    search();
+  }, [debouncedQuery, type, year]);
 
-  const renderItem = useCallback(
-    ({ item }: { item: MovieSummary }) => (
-      <MovieCard
-        movie={item}
-        onPress={() => navigation.navigate('MovieDetails', { imdbID: item.imdbID })}
-        onToggleFavorite={() => toggleFavorite(item)}
-        isFavorite={isFavorite(item.imdbID)}
-      />
-    ),
-    [navigation, isFavorite, toggleFavorite],
+  const categoryChips = useMemo(
+    () => [
+      { label: 'Action', value: undefined },
+      { label: 'Comedy', value: undefined },
+      { label: 'Romance', value: undefined },
+      { label: 'Drama', value: undefined },
+      { label: 'Horror', value: undefined },
+      { label: 'Thriller', value: undefined },
+    ],
+    [],
   );
 
-  const keyExtractor = useCallback((item: MovieSummary) => item.imdbID, []);
-
-  const listEmpty = useMemo(() => {
-    if (isLoading) return null;
-    if (error) return <Text style={styles.stateText}>{error}</Text>;
-    if (!debouncedQuery.trim()) return <Text style={styles.stateText}>Search for a movie</Text>;
-    return <Text style={styles.stateText}>No results</Text>;
-  }, [debouncedQuery, error, isLoading]);
-
   const typeChips = useMemo(
-    () =>
-      [
-        { label: 'Movies', value: 'movie' as MovieType },
-        { label: 'Series', value: 'series' as MovieType },
-        { label: 'Episodes', value: 'episode' as MovieType },
-      ] as const,
+    () => [
+      { label: 'All', value: undefined },
+      { label: 'Movies', value: 'movie' as MovieType },
+      { label: 'Series', value: 'series' as MovieType },
+      { label: 'Episodes', value: 'episode' as MovieType },
+    ],
     [],
   );
 
@@ -223,11 +140,11 @@ function MoviesListScreen() {
     return yearList;
   }, []);
 
-  const sortedItems = useMemo(() => {
+  const sortedSearchResults = useMemo(() => {
     if (sortBy === 'relevance') {
-      return items;
+      return searchResults;
     }
-    const cloned = [...items];
+    const cloned = [...searchResults];
     if (sortBy === 'year_desc' || sortBy === 'year_asc') {
       cloned.sort((a, b) => {
         const ay = parseInt(a.year, 10);
@@ -244,37 +161,78 @@ function MoviesListScreen() {
       });
     }
     return cloned;
-  }, [items, sortBy]);
+  }, [searchResults, sortBy]);
+
+  const renderHorizontalMovie = useCallback(
+    (movie: MovieSummary) => (
+      <HorizontalMovieCard
+        movie={movie}
+        onPress={() => navigation.navigate('MovieDetails', { imdbID: movie.imdbID })}
+      />
+    ),
+    [navigation],
+  );
+
+  const renderSearchResult = useCallback(
+    ({ item }: { item: MovieSummary }) => (
+      <MovieCard
+        movie={item}
+        onPress={() => navigation.navigate('MovieDetails', { imdbID: item.imdbID })}
+        onToggleFavorite={() => toggleFavorite(item)}
+        isFavorite={isFavorite(item.imdbID)}
+      />
+    ),
+    [navigation, isFavorite, toggleFavorite],
+  );
+
+  const showSearchResults = queryInput.trim().length >= 3;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.searchSection}>
-        <View style={styles.searchRow}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            value={queryInput}
-            onChangeText={setQueryInput}
-            placeholder="Search"
-            style={styles.input}
-            returnKeyType="search"
-          />
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.welcomeText}>Welcome Joko 👋</Text>
+            <Text style={styles.subtitleText}>Let's relax and watch a movie !</Text>
+          </View>
           <Pressable
-            style={styles.filterButton}
-            onPress={() => setShowFilters(prev => !prev)}
+            onPress={() => navigation.navigate('Favorites')}
+            style={styles.profileButton}
           >
-            <Text style={styles.filterButtonText}>Filters</Text>
+            <View style={styles.profileIcon}>
+              <Icon name="person-circle" size={40} color="#ff6b35" />
+            </View>
           </Pressable>
         </View>
-        {showFilters && (
-          <View style={styles.filtersRow}>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Icon name="search" size={20} color="#888" />
+            <TextInput
+              value={queryInput}
+              onChangeText={setQueryInput}
+              placeholder="Search movie ...."
+              placeholderTextColor="#888"
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+            <Pressable
+              onPress={() => setShowFilters(prev => !prev)}
+              style={styles.filterIconButton}
+            >
+              <Icon name="options" size={18} color="#fff" />
+            </Pressable>
+          </View>
+          {showFilters && (
+            <View style={styles.filtersRow}>
               <Pressable
                 onPress={() => setShowYearPicker(true)}
-                style={styles.yearInput}
+                style={[styles.filterButton, year && styles.filterButtonActive]}
               >
-                <Text style={styles.yearInputText}>
+                <Text style={[styles.filterButtonText, year && styles.filterButtonTextActive]}>
                   {year || 'Year'}
                 </Text>
               </Pressable>
@@ -284,7 +242,10 @@ function MoviesListScreen() {
                   style={[styles.sortChip, sortBy === 'relevance' && styles.sortChipActive]}
                 >
                   <Text
-                    style={[styles.sortChipText, sortBy === 'relevance' && styles.sortChipTextActive]}
+                    style={[
+                      styles.sortChipText,
+                      sortBy === 'relevance' && styles.sortChipTextActive,
+                    ]}
                   >
                     Default
                   </Text>
@@ -292,12 +253,10 @@ function MoviesListScreen() {
                 <Pressable
                   onPress={() => {
                     if (sortBy === 'year_desc' || sortBy === 'year_asc') {
-                      // Toggle if already on year sort
                       const next = sortBy === 'year_desc' ? 'year_asc' : 'year_desc';
                       setSortBy(next);
                       setLastYearSort(next);
                     } else {
-                      // Use remembered direction when switching from other sort
                       setSortBy(lastYearSort);
                     }
                   }}
@@ -309,7 +268,8 @@ function MoviesListScreen() {
                   <Text
                     style={[
                       styles.sortChipText,
-                      (sortBy === 'year_desc' || sortBy === 'year_asc') && styles.sortChipTextActive,
+                      (sortBy === 'year_desc' || sortBy === 'year_asc') &&
+                        styles.sortChipTextActive,
                     ]}
                   >
                     Year {sortBy === 'year_desc' ? '↓' : sortBy === 'year_asc' ? '↑' : lastYearSort === 'year_desc' ? '↓' : '↑'}
@@ -318,12 +278,10 @@ function MoviesListScreen() {
                 <Pressable
                   onPress={() => {
                     if (sortBy === 'title_asc' || sortBy === 'title_desc') {
-                      // Toggle if already on title sort
                       const next = sortBy === 'title_asc' ? 'title_desc' : 'title_asc';
                       setSortBy(next);
                       setLastTitleSort(next);
                     } else {
-                      // Use remembered direction when switching from other sort
                       setSortBy(lastTitleSort);
                     }
                   }}
@@ -335,7 +293,8 @@ function MoviesListScreen() {
                   <Text
                     style={[
                       styles.sortChipText,
-                      (sortBy === 'title_asc' || sortBy === 'title_desc') && styles.sortChipTextActive,
+                      (sortBy === 'title_asc' || sortBy === 'title_desc') &&
+                        styles.sortChipTextActive,
                     ]}
                   >
                     {sortBy === 'title_asc'
@@ -349,58 +308,117 @@ function MoviesListScreen() {
                 </Pressable>
               </View>
             </View>
-        )}
-        <View style={styles.filtersRow}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categories}
-          >
+          )}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Categories</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesContainer}
+        >
+          {typeChips.map((chip, index) => (
             <Pressable
-              key="all"
-              onPress={() => setType(undefined)}
-              style={[styles.chip, !type && styles.chipActive]}
+              key={index}
+              onPress={() => setType(chip.value)}
+              style={[styles.categoryChip, type === chip.value && styles.categoryChipActive]}
             >
-              <Text style={[styles.chipText, !type && styles.chipTextActive]}>
-                All
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  type === chip.value && styles.categoryChipTextActive,
+                ]}
+              >
+                {chip.label}
               </Text>
             </Pressable>
-            {typeChips.map(option => {
-              const active = type === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setType(active ? undefined : option.value)}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </View>
+          ))}
+        </ScrollView>
 
-      <FlatList
-        data={sortedItems}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        refreshing={isRefreshing}
-        onRefresh={onRefresh}
-        ListEmptyComponent={listEmpty}
-        ListFooterComponent={
-          isFetchingMore && items.length > 0 ? (
-            <View style={styles.footer}>
-              <ActivityIndicator />
+        {!showSearchResults ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Latest Movie</Text>
             </View>
-          ) : null
-        }
-        contentContainerStyle={items.length === 0 ? styles.emptyContainer : undefined}
-      />
+            {isLoadingLatest ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#ff6b35" />
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.moviesContainer}
+              >
+                {latestMovies.map(movie => (
+                  <HorizontalMovieCard
+                    key={movie.imdbID}
+                    movie={movie}
+                    onPress={() => navigation.navigate('MovieDetails', { imdbID: movie.imdbID })}
+                  />
+                ))}
+              </ScrollView>
+            )}
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Favorite Movie</Text>
+            </View>
+            {favoritesList.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No favorite movies yet</Text>
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.moviesContainer}
+              >
+                {favoritesList.map(movie => (
+                  <HorizontalMovieCard
+                    key={movie.imdbID}
+                    movie={{
+                      imdbID: movie.imdbID,
+                      title: movie.title,
+                      year: movie.year || '',
+                      type: (movie.type as MovieType) || 'movie',
+                      poster: movie.poster,
+                    }}
+                    onPress={() => navigation.navigate('MovieDetails', { imdbID: movie.imdbID })}
+                  />
+                ))}
+              </ScrollView>
+            )}
+          </>
+        ) : (
+          <View style={styles.searchResultsContainer}>
+            {isLoadingSearch ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#ff6b35" />
+              </View>
+            ) : error ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{error}</Text>
+              </View>
+            ) : searchResults.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No results found</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={sortedSearchResults}
+                keyExtractor={item => item.imdbID}
+                renderItem={renderSearchResult}
+                numColumns={2}
+                columnWrapperStyle={styles.row}
+                contentContainerStyle={styles.gridContainer}
+                scrollEnabled={false}
+              />
+            )}
+          </View>
+        )}
+      </ScrollView>
 
       <Modal
         visible={showYearPicker}
@@ -413,7 +431,7 @@ function MoviesListScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Year</Text>
               <Pressable onPress={() => setShowYearPicker(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Icon name="close" size={24} color="#888" />
               </Pressable>
             </View>
             <FlatList
@@ -425,10 +443,7 @@ function MoviesListScreen() {
                     setYear(item);
                     setShowYearPicker(false);
                   }}
-                  style={[
-                    styles.yearOption,
-                    year === item && styles.yearOptionSelected,
-                  ]}
+                  style={[styles.yearOption, year === item && styles.yearOptionSelected]}
                 >
                   <Text
                     style={[
@@ -455,6 +470,27 @@ function MoviesListScreen() {
           </View>
         </View>
       </Modal>
+
+      <View style={styles.bottomNav}>
+        <Pressable style={[styles.navItem, styles.navItemActive]}>
+          <View style={styles.navIconContainer}>
+            <Icon name="film" size={24} color="#fff" />
+          </View>
+          <Text style={[styles.navLabel, styles.navLabelActive]}>Movie</Text>
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <Icon name="pricetag" size={24} color="#888" />
+        </Pressable>
+        <Pressable
+          style={styles.navItem}
+          onPress={() => navigation.navigate('Favorites')}
+        >
+          <Icon name="bookmark" size={24} color="#888" />
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <Icon name="person" size={24} color="#888" />
+        </Pressable>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -462,145 +498,231 @@ function MoviesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f7f7',
+    backgroundColor: '#1a1a1a',
   },
-  searchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-    gap: 12,
+  scrollView: {
+    flex: 1,
   },
-  searchRow: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: '#aaa',
+  },
+  profileButton: {
+    padding: 4,
+  },
+  profileIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#2a2a2a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ff6b35',
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f3f3',
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  input: {
-    flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    fontSize: 16,
-  },
-  searchIcon: {
-    fontSize: 18,
-    marginRight: 8,
-    color: '#777',
-  },
-  filterButton: {
-    marginLeft: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: '#2a2a2a',
     borderRadius: 16,
-    backgroundColor: '#111',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
   },
-  filterButtonText: {
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
     color: '#fff',
-    fontSize: 13,
+  },
+  filterIconButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    backgroundColor: '#3a3a3a',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#ff6b35',
     fontWeight: '500',
+  },
+  categoriesContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    gap: 12,
+  },
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#2a2a2a',
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  categoryChipActive: {
+    backgroundColor: '#ff6b35',
+    borderColor: '#ff6b35',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+  },
+  moviesContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  searchResultsContainer: {
+    paddingHorizontal: 8,
+    paddingBottom: 100,
+  },
+  gridContainer: {
+    padding: 8,
+  },
+  row: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+    borderTopWidth: 1,
+    borderTopColor: '#3a3a3a',
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  navItemActive: {
+    backgroundColor: '#ff6b35',
+    borderRadius: 12,
+  },
+  navIconContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  navLabelActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   filtersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  yearInput: {
-    flexBasis: 90,
-    marginRight: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#f7f7f7',
-    justifyContent: 'center',
-  },
-  yearInputText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  categories: {
+    marginTop: 12,
     gap: 12,
-    paddingVertical: 8,
-    paddingRight: 12,
   },
-  typeChips: {
-    flexDirection: 'row',
-    gap: 8,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  chip: {
-    paddingHorizontal: 14,
+  filterButton: {
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 18,
+    borderRadius: 20,
+    backgroundColor: '#2a2a2a',
     borderWidth: 1,
-    borderColor: '#d0d0d0',
-    backgroundColor: '#fff',
+    borderColor: '#3a3a3a',
   },
-  chipActive: {
-    backgroundColor: '#111',
-    borderColor: '#111',
+  filterButtonActive: {
+    backgroundColor: '#ff6b35',
+    borderColor: '#ff6b35',
   },
-  chipText: {
-    color: '#333',
-    fontSize: 15,
-    textTransform: 'capitalize',
+  filterButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
   },
-  chipTextActive: {
+  filterButtonTextActive: {
     color: '#fff',
   },
   sortRow: {
     flexDirection: 'row',
     gap: 8,
     flex: 1,
-    justifyContent: 'flex-end',
   },
   sortChip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
+    backgroundColor: '#2a2a2a',
     borderWidth: 1,
-    borderColor: '#d0d0d0',
-    backgroundColor: '#fff',
+    borderColor: '#3a3a3a',
   },
   sortChipActive: {
-    backgroundColor: '#111',
-    borderColor: '#111',
+    backgroundColor: '#ff6b35',
+    borderColor: '#ff6b35',
   },
   sortChipText: {
     fontSize: 13,
-    color: '#333',
+    color: '#fff',
   },
   sortChipTextActive: {
     color: '#fff',
   },
-  emptyContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  stateText: {
-    fontSize: 16,
-    color: '#555',
-  },
-  footer: {
-    paddingVertical: 16,
-  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2a2a2a',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -610,58 +732,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3a',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-  },
-  modalClose: {
-    fontSize: 24,
-    color: '#666',
-    paddingHorizontal: 8,
+    color: '#fff',
   },
   yearOption: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3a',
   },
   yearOptionSelected: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#3a3a3a',
   },
   yearOptionText: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
   },
   yearOptionTextSelected: {
     fontWeight: '600',
-    color: '#111',
+    color: '#ff6b35',
   },
   clearYearButton: {
     paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e0e0e0',
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#3a3a3a',
     alignItems: 'center',
   },
   clearYearText: {
     fontSize: 16,
-    color: '#666',
+    color: '#ff6b35',
     fontWeight: '500',
-  },
-  headerButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  headerButtonText: {
-    fontSize: 24,
   },
 });
 
 export default MoviesListScreen;
-

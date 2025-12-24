@@ -1,6 +1,8 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { MovieSummary } from '../api/omdb';
+import CachedImage from './CachedImage';
 
 type Props = {
   movie: MovieSummary;
@@ -14,7 +16,7 @@ function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
     <Pressable onPress={onPress} style={styles.container}>
       <View style={styles.posterWrapper}>
         {movie.poster ? (
-          <Image source={{ uri: movie.poster }} style={styles.poster} />
+          <CachedImage source={{ uri: movie.poster }} style={styles.poster} />
         ) : (
           <View style={styles.posterPlaceholder}>
             <Text style={styles.posterPlaceholderText}>No image</Text>
@@ -22,15 +24,18 @@ function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
         )}
       </View>
       <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>
-          {movie.title}
-        </Text>
-        <Text style={styles.meta}>
-          {movie.year} • {movie.type}
-        </Text>
-        <Pressable onPress={onToggleFavorite} style={styles.favoriteButton}>
-          <Text style={styles.favoriteText}>{isFavorite ? '★ Favorited' : '☆ Favorite'}</Text>
-        </Pressable>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={2}>
+            {movie.title}
+          </Text>
+          <Pressable onPress={onToggleFavorite} style={styles.favoriteButton}>
+            <Icon
+              name={isFavorite ? 'star' : 'star-outline'}
+              size={18}
+              color="#ff6b35"
+            />
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -38,20 +43,21 @@ function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#fff',
-    gap: 12,
+    flex: 1,
+    margin: 8,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   posterWrapper: {
-    width: 64,
-    height: 96,
-    borderRadius: 6,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
+    width: '100%',
+    aspectRatio: 2 / 3,
+    backgroundColor: '#1a1a1a',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -68,34 +74,25 @@ const styles = StyleSheet.create({
   },
   posterPlaceholderText: {
     fontSize: 12,
-    color: '#777',
+    color: '#888',
     textAlign: 'center',
   },
   info: {
-    flex: 1,
-    gap: 6,
+    padding: 12,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
   },
   title: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111',
-  },
-  meta: {
-    fontSize: 13,
-    color: '#555',
+    color: '#fff',
   },
   favoriteButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    backgroundColor: '#fafafa',
-  },
-  favoriteText: {
-    fontSize: 13,
-    color: '#444',
+    padding: 4,
   },
 });
 
