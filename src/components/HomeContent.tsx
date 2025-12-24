@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import HorizontalMovieCard from './HorizontalMovieCard';
 import { MovieSummary, MovieType } from '../api/omdb';
-import { ERROR_MESSAGES } from '../constants/app';
+import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
 
 type HomeContentProps = {
   isLoadingLatest: boolean;
@@ -16,6 +16,8 @@ type HomeContentProps = {
     poster?: string;
   }>;
   onMoviePress: (imdbID: string) => void;
+  onViewAllLatest?: () => void;
+  onViewAllFavorites?: () => void;
 };
 
 export default function HomeContent({
@@ -23,6 +25,8 @@ export default function HomeContent({
   latestMovies,
   favoritesList,
   onMoviePress,
+  onViewAllLatest,
+  onViewAllFavorites,
 }: HomeContentProps) {
   // Prefetch posters when movies change
   useEffect(() => {
@@ -43,6 +47,11 @@ export default function HomeContent({
     <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Latest Movie</Text>
+        {latestMovies.length > 0 && onViewAllLatest && (
+          <Pressable onPress={onViewAllLatest}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </Pressable>
+        )}
       </View>
       {isLoadingLatest ? (
         <View style={styles.loadingContainer}>
@@ -66,6 +75,11 @@ export default function HomeContent({
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Favorite Movie</Text>
+        {favoritesList.length > 0 && onViewAllFavorites && (
+          <Pressable onPress={onViewAllFavorites}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </Pressable>
+        )}
       </View>
       {favoritesList.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -111,6 +125,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: APP_CONSTANTS.COLORS.ACCENT,
   },
   moviesContainer: {
     paddingHorizontal: 20,

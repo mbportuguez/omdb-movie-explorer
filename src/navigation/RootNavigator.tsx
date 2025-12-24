@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MoviesListScreen from '../screens/MoviesListScreen';
 import MovieDetailsScreen from '../screens/MovieDetailsScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
+import LatestMoviesScreen from '../screens/LatestMoviesScreen';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { SearchProvider } from '../context/SearchContext';
 
@@ -11,6 +12,7 @@ export type RootStackParamList = {
   MoviesList: undefined;
   MovieDetails: { imdbID: string };
   Favorites: undefined;
+  LatestMovies: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +37,11 @@ function RootNavigator() {
               name="Favorites"
               component={FavoritesScreen}
               options={{ title: 'Favorites' }}
+            />
+            <Stack.Screen
+              name="LatestMovies"
+              component={LatestMoviesScreen}
+              options={{ title: 'Latest Movies' }}
             />
           </Stack.Navigator>
         </NavigationContainer>
