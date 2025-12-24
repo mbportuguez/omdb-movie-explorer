@@ -34,8 +34,8 @@ function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <Icon name="person-circle" size={80} color={colors.ACCENT} />
           </View>
-          <Text style={[styles.name, { color: colors.TEXT.PRIMARY }]}>Joko</Text>
-          <Text style={[styles.email, { color: colors.TEXT.SECONDARY }]}>joko@example.com</Text>
+          <Text style={[styles.name, { color: colors.TEXT.PRIMARY }]}>MBP</Text>
+          <Text style={[styles.email, { color: colors.TEXT.SECONDARY }]}>mbp@example.com</Text>
         </View>
 
         <View style={styles.settingsSection}>
