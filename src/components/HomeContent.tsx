@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import HorizontalMovieCard from './HorizontalMovieCard';
 import { MovieSummary, MovieType } from '../api/omdb';
 import { ERROR_MESSAGES } from '../constants/app';
@@ -23,6 +24,21 @@ export default function HomeContent({
   favoritesList,
   onMoviePress,
 }: HomeContentProps) {
+  // Prefetch posters when movies change
+  useEffect(() => {
+    const allPosters = [
+      ...latestMovies.map(m => m.poster),
+      ...favoritesList.map(m => m.poster),
+    ]
+      .filter(Boolean)
+      .slice(0, 20) // Prefetch first 20
+      .map(uri => ({ uri }));
+
+    if (allPosters.length > 0) {
+      FastImage.preload(allPosters);
+    }
+  }, [latestMovies, favoritesList]);
+
   return (
     <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>

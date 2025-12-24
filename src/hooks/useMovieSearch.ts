@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FastImage from 'react-native-fast-image';
 import { searchMovies, MovieSummary, MovieType } from '../api/omdb';
 import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
 
@@ -118,6 +119,17 @@ export function useMovieSearch({
         setSearchResults(prev => {
           const existingIds = new Set(prev.map(item => item.imdbID));
           const newItems = result.items.filter(item => !existingIds.has(item.imdbID));
+          
+          // Prefetch posters for the new items
+          const posters = newItems
+            .map(m => m.poster)
+            .filter(Boolean)
+            .map(uri => ({ uri }));
+          
+          if (posters.length > 0) {
+            FastImage.preload(posters);
+          }
+          
           return [...prev, ...newItems];
         });
         setSearchPage(nextPage);

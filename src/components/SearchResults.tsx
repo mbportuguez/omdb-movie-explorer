@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import MovieCard from './MovieCard';
 import { MovieSummary } from '../api/omdb';
 import { ERROR_MESSAGES } from '../constants/app';
@@ -27,6 +28,21 @@ export default function SearchResults({
   isFavorite,
   onEndReached,
 }: SearchResultsProps) {
+  // Prefetch first batch of posters when results change
+  useEffect(() => {
+    if (results.length > 0) {
+      const urls = results
+        .map(m => m.poster)
+        .filter(Boolean)
+        .slice(0, 20) // Prefetch first 20
+        .map(uri => ({ uri }));
+
+      if (urls.length > 0) {
+        FastImage.preload(urls);
+      }
+    }
+  }, [results]);
+
   return (
     <FlatList
       data={results}
@@ -43,6 +59,10 @@ export default function SearchResults({
       columnWrapperStyle={styles.row}
       contentContainerStyle={styles.gridContainer}
       keyboardShouldPersistTaps="handled"
+      initialNumToRender={8}
+      windowSize={7}
+      maxToRenderPerBatch={8}
+      removeClippedSubviews
       ListEmptyComponent={
         isLoading && !isUserTyping && results.length === 0 ? (
           <View style={styles.loadingContainer}>
