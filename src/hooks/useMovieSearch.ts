@@ -10,6 +10,29 @@ type UseMovieSearchOptions = {
   onError?: (error: string) => void;
 };
 
+/**
+ * Helper function to normalize year input
+ */
+const normalizeYear = (year: string): string | undefined => {
+  const trimmed = year.trim();
+  return trimmed.length === 4 ? trimmed : undefined;
+};
+
+/**
+ * Helper function to prefetch movie posters
+ */
+const prefetchPosters = (movies: MovieSummary[]): void => {
+  const posters = movies
+    .map(m => m.poster)
+    .filter(Boolean)
+    .slice(0, 20) // Limit prefetch to avoid overwhelming
+    .map(uri => ({ uri }));
+  
+  if (posters.length > 0) {
+    FastImage.preload(posters);
+  }
+};
+
 export function useMovieSearch({
   debouncedQuery,
   type,
@@ -17,13 +40,19 @@ export function useMovieSearch({
   onError,
 }: UseMovieSearchOptions) {
   const [searchResults, setSearchResults] = useState<MovieSummary[]>([]);
-  const [searchPage, setSearchPage] = useState(APP_CONSTANTS.PAGINATION.INITIAL_PAGE);
+  const [searchPage, setSearchPage] = useState<number>(APP_CONSTANTS.PAGINATION.INITIAL_PAGE);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastSearchQueryRef = useRef('');
   const loadMoreLockRef = useRef(false);
+  const onErrorRef = useRef(onError);
+
+  // Keep onError ref up to date without causing re-renders
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
@@ -37,8 +66,8 @@ export function useMovieSearch({
       return;
     }
 
-    const normalizedYear = year.trim();
-    const searchKey = `${trimmed}|${type || ''}|${normalizedYear}`;
+    const normalizedYear = normalizeYear(year);
+    const searchKey = `${trimmed}|${type || ''}|${normalizedYear || ''}`;
 
     if (lastSearchQueryRef.current === searchKey) {
       return;
@@ -58,20 +87,25 @@ export function useMovieSearch({
             query: trimmed,
             page: APP_CONSTANTS.PAGINATION.INITIAL_PAGE,
             type,
-            year: normalizedYear.length === 4 ? normalizedYear : undefined,
+            year: normalizedYear,
           },
           { signal: controller.signal },
         );
         if (result.error) {
           const errorMsg = result.error;
           setError(errorMsg);
-          onError?.(errorMsg);
+          onErrorRef.current?.(errorMsg);
           setSearchResults([]);
           setTotalPages(0);
         } else {
           setSearchResults(result.items);
           setSearchPage(APP_CONSTANTS.PAGINATION.INITIAL_PAGE);
           setTotalPages(result.totalPages);
+          
+          // Prefetch posters for initial results
+          if (result.items.length > 0) {
+            prefetchPosters(result.items);
+          }
         }
       } catch (err: any) {
         if (err?.name === 'AbortError') {
@@ -79,7 +113,7 @@ export function useMovieSearch({
         }
         const errorMsg = ERROR_MESSAGES.FAILED_TO_SEARCH;
         setError(errorMsg);
-        onError?.(errorMsg);
+        onErrorRef.current?.(errorMsg);
         setSearchResults([]);
         setTotalPages(0);
       } finally {
@@ -88,7 +122,7 @@ export function useMovieSearch({
     })();
 
     return () => controller.abort();
-  }, [debouncedQuery, type, year, onError]);
+  }, [debouncedQuery, type, year]);
 
   const loadMore = useCallback(async () => {
     const trimmed = debouncedQuery.trim();
@@ -106,13 +140,13 @@ export function useMovieSearch({
     setIsFetchingMore(true);
 
     try {
-      const normalizedYear = year.trim();
+      const normalizedYear = normalizeYear(year);
       const nextPage = searchPage + 1;
       const result = await searchMovies({
         query: trimmed,
         page: nextPage,
         type,
-        year: normalizedYear.length === 4 ? normalizedYear : undefined,
+        year: normalizedYear,
       });
 
       if (!result.error && result.items.length > 0) {
@@ -120,14 +154,9 @@ export function useMovieSearch({
           const existingIds = new Set(prev.map(item => item.imdbID));
           const newItems = result.items.filter(item => !existingIds.has(item.imdbID));
           
-          // Prefetch posters for the new items
-          const posters = newItems
-            .map(m => m.poster)
-            .filter(Boolean)
-            .map(uri => ({ uri }));
-          
-          if (posters.length > 0) {
-            FastImage.preload(posters);
+          // Prefetch posters for new items (non-blocking)
+          if (newItems.length > 0) {
+            prefetchPosters(newItems);
           }
           
           return [...prev, ...newItems];
