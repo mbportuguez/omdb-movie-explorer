@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
-import { Image, ImageProps, StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import FastImage, { FastImageProps, ResizeMode } from 'react-native-fast-image';
 
 /**
  * CachedImage component with loading state and error handling
  * 
- * React Native's Image component has built-in caching, but this wrapper
- * provides better UX with loading indicators and error states.
- * 
- * For production, consider using react-native-fast-image for better
- * performance and more advanced caching options.
+ * Uses react-native-fast-image for proper disk caching that persists across app restarts.
  */
-type CachedImageProps = ImageProps & {
+type CachedImageProps = Omit<FastImageProps, 'source'> & {
   source: { uri: string };
   placeholder?: React.ReactNode;
   fallback?: React.ReactNode;
+  resizeMode?: ResizeMode;
 };
 
 function CachedImage({
@@ -21,24 +19,23 @@ function CachedImage({
   style,
   placeholder,
   fallback,
+  resizeMode = FastImage.resizeMode.cover,
   ...props
 }: CachedImageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const handleLoadStart = () => {
-    setLoading(true);
-    setError(false);
-  };
-
-  const handleLoadEnd = () => {
-    setLoading(false);
-  };
-
-  const handleError = () => {
-    setLoading(false);
-    setError(true);
-  };
+  if (!source?.uri) {
+    return (
+      <View style={[styles.container, style]}>
+        {fallback || (
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>No image</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   if (error) {
     return (
@@ -54,16 +51,29 @@ function CachedImage({
 
   return (
     <View style={[styles.container, style]}>
-      <Image
+      <FastImage
         {...props}
-        source={source}
         style={[styles.image, style]}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
+        source={{
+          uri: source.uri,
+          cache: FastImage.cacheControl.immutable,
+          priority: FastImage.priority.normal,
+        }}
+        resizeMode={resizeMode}
+        onLoadStart={() => {
+          setLoading(true);
+          setError(false);
+        }}
+        onLoadEnd={() => {
+          setLoading(false);
+        }}
+        onError={() => {
+          setLoading(false);
+          setError(true);
+        }}
       />
       {loading && (
-        <View style={styles.loadingOverlay}>
+        <View style={styles.loadingOverlay} pointerEvents="none">
           {placeholder || <ActivityIndicator size="small" color="#666" />}
         </View>
       )}
