@@ -7,7 +7,7 @@ type AppHeaderProps = {
   onFavoritesPress: () => void;
 };
 
-export default function AppHeader({ onFavoritesPress }: AppHeaderProps) {
+const AppHeader = React.memo(function AppHeader({ onFavoritesPress }: AppHeaderProps) {
   const colors = useAppColors();
 
   return (
@@ -23,7 +23,9 @@ export default function AppHeader({ onFavoritesPress }: AppHeaderProps) {
       </Pressable>
     </View>
   );
-}
+});
+
+export default AppHeader;
 
 const styles = StyleSheet.create({
   header: {

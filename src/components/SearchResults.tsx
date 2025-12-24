@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import MovieCard from './MovieCard';
@@ -46,18 +46,25 @@ export default function SearchResults({
     }
   }, [results]);
 
+  const renderItem = useCallback(
+    ({ item }: { item: MovieSummary }) => (
+      <MovieCard
+        movie={item}
+        onPress={() => onMoviePress(item.imdbID)}
+        onToggleFavorite={() => onToggleFavorite(item)}
+        isFavorite={isFavorite(item.imdbID)}
+      />
+    ),
+    [onMoviePress, onToggleFavorite, isFavorite],
+  );
+
+  const keyExtractor = useCallback((item: MovieSummary) => item.imdbID, []);
+
   return (
     <FlatList
       data={results}
-      keyExtractor={item => item.imdbID}
-      renderItem={({ item }) => (
-        <MovieCard
-          movie={item}
-          onPress={() => onMoviePress(item.imdbID)}
-          onToggleFavorite={() => onToggleFavorite(item)}
-          isFavorite={isFavorite(item.imdbID)}
-        />
-      )}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
       numColumns={2}
       columnWrapperStyle={styles.row}
       contentContainerStyle={styles.gridContainer}

@@ -7,7 +7,6 @@ import FavoritesScreen from '../screens/FavoritesScreen';
 import LatestMoviesScreen from '../screens/LatestMoviesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { FavoritesProvider } from '../context/FavoritesContext';
-import { SearchProvider } from '../context/SearchContext';
 import { ThemeProvider } from '../context/ThemeContext';
 
 export type RootStackParamList = {
@@ -24,37 +23,35 @@ function RootNavigator() {
   return (
     <ThemeProvider>
       <FavoritesProvider>
-        <SearchProvider>
-          <NavigationContainer>
-            <Stack.Navigator>
-              <Stack.Screen
-                name="MoviesList"
-                component={MoviesListScreen}
-                options={{ title: 'Movies' }}
-              />
-              <Stack.Screen
-                name="MovieDetails"
-                component={MovieDetailsScreen}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Favorites"
-                component={FavoritesScreen}
-                options={{ title: 'Favorites' }}
-              />
-              <Stack.Screen
-                name="LatestMovies"
-                component={LatestMoviesScreen}
-                options={{ title: 'Latest Movies' }}
-              />
-              <Stack.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{ headerShown: false }}
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </SearchProvider>
+        <NavigationContainer>
+          <Stack.Navigator>
+            <Stack.Screen
+              name="MoviesList"
+              component={MoviesListScreen}
+              options={{ title: 'Movies' }}
+            />
+            <Stack.Screen
+              name="MovieDetails"
+              component={MovieDetailsScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Favorites"
+              component={FavoritesScreen}
+              options={{ title: 'Favorites' }}
+            />
+            <Stack.Screen
+              name="LatestMovies"
+              component={LatestMoviesScreen}
+              options={{ title: 'Latest Movies' }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ headerShown: false }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
       </FavoritesProvider>
     </ThemeProvider>
   );

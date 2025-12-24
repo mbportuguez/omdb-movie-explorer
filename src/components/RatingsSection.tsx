@@ -9,7 +9,7 @@ type RatingsSectionProps = {
   rating: number | null;
 };
 
-function RatingsSection({ rating }: RatingsSectionProps) {
+const RatingsSection = React.memo(function RatingsSection({ rating }: RatingsSectionProps) {
   const colors = useAppColors();
   if (!rating) return null;
 
@@ -27,7 +27,7 @@ function RatingsSection({ rating }: RatingsSectionProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   ratingsRow: {

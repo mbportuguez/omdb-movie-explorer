@@ -9,7 +9,7 @@ type Props = {
   onPress: () => void;
 };
 
-function HorizontalMovieCard({ movie, onPress }: Props) {
+const HorizontalMovieCard = React.memo(function HorizontalMovieCard({ movie, onPress }: Props) {
   const colors = useAppColors();
 
   return (
@@ -28,7 +28,7 @@ function HorizontalMovieCard({ movie, onPress }: Props) {
       </Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

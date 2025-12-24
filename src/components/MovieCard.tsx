@@ -12,7 +12,7 @@ type Props = {
   isFavorite: boolean;
 };
 
-function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
+const MovieCard = React.memo(function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
   const colors = useAppColors();
 
   return (
@@ -42,7 +42,7 @@ function MovieCard({ movie, onPress, onToggleFavorite, isFavorite }: Props) {
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

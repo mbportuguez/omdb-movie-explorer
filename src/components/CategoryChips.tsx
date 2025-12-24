@@ -15,7 +15,7 @@ const typeChips = [
   { label: 'Episodes', value: 'episode' as MovieType },
 ];
 
-export default function CategoryChips({ type, onTypeChange }: CategoryChipsProps) {
+const CategoryChips = React.memo(function CategoryChips({ type, onTypeChange }: CategoryChipsProps) {
   const colors = useAppColors();
 
   return (
@@ -42,7 +42,9 @@ export default function CategoryChips({ type, onTypeChange }: CategoryChipsProps
       </View>
     </>
   );
-}
+});
+
+export default CategoryChips;
 
 const styles = StyleSheet.create({
   sectionHeader: {

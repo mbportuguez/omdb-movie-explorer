@@ -10,6 +10,8 @@ type UseMovieSearchOptions = {
   onError?: (error: string) => void;
 };
 
+const DEFAULT_ON_ERROR = () => {};
+
 /**
  * Helper function to normalize year input
  */
@@ -37,7 +39,7 @@ export function useMovieSearch({
   debouncedQuery,
   type,
   year,
-  onError,
+  onError = DEFAULT_ON_ERROR,
 }: UseMovieSearchOptions) {
   const [searchResults, setSearchResults] = useState<MovieSummary[]>([]);
   const [searchPage, setSearchPage] = useState<number>(APP_CONSTANTS.PAGINATION.INITIAL_PAGE);

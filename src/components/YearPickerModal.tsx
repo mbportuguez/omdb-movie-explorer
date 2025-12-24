@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { APP_CONSTANTS } from '../constants/app';
+import { useAppColors } from '../hooks/useAppColors';
 
 type YearPickerModalProps = {
   visible: boolean;
@@ -27,6 +28,7 @@ export default function YearPickerModal({
   onSelectYear,
   onClearYear,
 }: YearPickerModalProps) {
+  const colors = useAppColors();
   const years = useMemo(() => generateYears(), []);
 
   return (
@@ -37,11 +39,11 @@ export default function YearPickerModal({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Year</Text>
+        <View style={[styles.modalContent, { backgroundColor: colors.BACKGROUND.SECONDARY }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.BACKGROUND.TERTIARY }]}>
+            <Text style={[styles.modalTitle, { color: colors.TEXT.PRIMARY }]}>Select Year</Text>
             <Pressable onPress={onClose}>
-              <Icon name="close" size={24} color="#888" />
+              <Icon name="close" size={24} color={colors.TEXT.TERTIARY} />
             </Pressable>
           </View>
           <FlatList
@@ -53,12 +55,17 @@ export default function YearPickerModal({
                   onSelectYear(item);
                   onClose();
                 }}
-                style={[styles.yearOption, selectedYear === item && styles.yearOptionSelected]}
+                style={[
+                  styles.yearOption,
+                  { borderBottomColor: colors.BACKGROUND.TERTIARY },
+                  selectedYear === item && { backgroundColor: colors.BACKGROUND.TERTIARY },
+                ]}
               >
                 <Text
                   style={[
                     styles.yearOptionText,
-                    selectedYear === item && styles.yearOptionTextSelected,
+                    { color: colors.TEXT.PRIMARY },
+                    selectedYear === item && { fontWeight: '600', color: colors.ACCENT },
                   ]}
                 >
                   {item}
@@ -68,8 +75,8 @@ export default function YearPickerModal({
             initialNumToRender={20}
             maxToRenderPerBatch={20}
           />
-          <Pressable onPress={onClearYear} style={styles.clearYearButton}>
-            <Text style={styles.clearYearText}>Clear</Text>
+          <Pressable onPress={onClearYear} style={[styles.clearYearButton, { borderTopColor: colors.BACKGROUND.TERTIARY }]}>
+            <Text style={[styles.clearYearText, { color: colors.ACCENT }]}>Clear</Text>
           </Pressable>
         </View>
       </View>
@@ -84,7 +91,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#2a2a2a',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -97,40 +103,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#3a3a3a',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
   },
   yearOption: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#3a3a3a',
-  },
-  yearOptionSelected: {
-    backgroundColor: '#3a3a3a',
   },
   yearOptionText: {
     fontSize: 16,
-    color: '#fff',
-  },
-  yearOptionTextSelected: {
-    fontWeight: '600',
-    color: '#ff6b35',
   },
   clearYearButton: {
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: '#3a3a3a',
     alignItems: 'center',
   },
   clearYearText: {
     fontSize: 16,
-    color: '#ff6b35',
     fontWeight: '500',
   },
 });

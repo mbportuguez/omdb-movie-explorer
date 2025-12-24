@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type FavoriteMovie = {
@@ -48,7 +48,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const toggleFavorite = async (movie: FavoriteMovie) => {
+  const toggleFavorite = useCallback(async (movie: FavoriteMovie) => {
     const exists = favorites[movie.imdbID];
     const next = { ...favorites };
     if (exists) {
@@ -57,9 +57,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       next[movie.imdbID] = movie;
     }
     await persist(next);
-  };
+  }, [favorites]);
 
-  const isFavorite = (imdbID: string) => Boolean(favorites[imdbID]);
+  const isFavorite = useCallback((imdbID: string) => Boolean(favorites[imdbID]), [favorites]);
 
   const value = useMemo(
     () => ({
@@ -68,7 +68,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       isFavorite,
       loading,
     }),
-    [favorites, loading],
+    [favorites, toggleFavorite, isFavorite, loading],
   );
 
   return (

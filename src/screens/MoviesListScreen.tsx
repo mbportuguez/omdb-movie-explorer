@@ -67,7 +67,6 @@ function MoviesListScreen() {
     debouncedQuery,
     type,
     year,
-    onError: () => {},
   });
 
   const handleChangeQuery = useCallback(

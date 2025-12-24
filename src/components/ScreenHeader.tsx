@@ -9,7 +9,7 @@ type ScreenHeaderProps = {
   onClose: () => void;
 };
 
-export default function ScreenHeader({ title, onClose }: ScreenHeaderProps) {
+const ScreenHeader = React.memo(function ScreenHeader({ title, onClose }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
   const colors = useAppColors();
 
@@ -24,7 +24,9 @@ export default function ScreenHeader({ title, onClose }: ScreenHeaderProps) {
       <View style={styles.placeholder} />
     </View>
   );
-}
+});
+
+export default ScreenHeader;
 
 const styles = StyleSheet.create({
   header: {
