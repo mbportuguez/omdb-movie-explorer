@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,13 +6,18 @@ import {
   StyleSheet,
   Text,
   View,
+  StatusBar,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { fetchMovieDetails, MovieDetails } from '../api/omdb';
 import { useFavorites } from '../context/FavoritesContext';
 import { RootStackParamList } from '../navigation/RootNavigator';
-import CachedImage from '../components/CachedImage';
+import { useMovieDetails } from '../hooks/useMovieDetails';
+import { extractImdbRating, parseActors } from '../utils/movieUtils';
+import { APP_CONSTANTS, ERROR_MESSAGES } from '../constants/app';
+import PosterSection from '../components/PosterSection';
+import MovieDetailsSection from '../components/MovieDetailsSection';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'MovieDetails'>;
 type Route = RouteProp<RootStackParamList, 'MovieDetails'>;
@@ -22,29 +27,13 @@ function MovieDetailsScreen() {
   const route = useRoute<Route>();
   const { imdbID } = route.params;
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { movie, loading, error } = useMovieDetails(imdbID);
 
-  const [movie, setMovie] = useState<MovieDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const details = await fetchMovieDetails(imdbID);
-        if (details) {
-          setMovie(details);
-        } else {
-          setError('Movie not found');
-        }
-      } catch (e) {
-        setError('Failed to load movie details');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [imdbID]);
+  const imdbRating = useMemo(() => extractImdbRating(movie?.ratings), [movie?.ratings]);
+  const actors = useMemo(
+    () => parseActors(movie?.actors, APP_CONSTANTS.DETAILS.MAX_ACTORS_DISPLAY),
+    [movie?.actors]
+  );
 
   const handleToggleFavorite = useCallback(async () => {
     if (!movie) return;
@@ -57,10 +46,32 @@ function MovieDetailsScreen() {
     });
   }, [movie, toggleFavorite]);
 
+  const renderOverlayButtons = useCallback(() => {
+    const favorite = movie ? isFavorite(movie.imdbID) : false;
+    return (
+      <>
+        <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <View style={styles.iconButton}>
+            <Icon name="close" size={24} color={APP_CONSTANTS.COLORS.TEXT.PRIMARY} />
+          </View>
+        </Pressable>
+        <Pressable onPress={handleToggleFavorite} style={styles.favoriteButton}>
+          <View style={styles.iconButton}>
+            <Icon 
+              name={favorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={favorite ? APP_CONSTANTS.COLORS.ACCENT : APP_CONSTANTS.COLORS.TEXT.PRIMARY} 
+            />
+          </View>
+        </Pressable>
+      </>
+    );
+  }, [movie, isFavorite, handleToggleFavorite, navigation]);
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={APP_CONSTANTS.COLORS.ACCENT} />
         <Text style={styles.loadingText}>Loading movie details...</Text>
       </View>
     );
@@ -69,196 +80,84 @@ function MovieDetailsScreen() {
   if (error || !movie) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'Movie not found'}</Text>
+        <Text style={styles.errorText}>{error || ERROR_MESSAGES.FAILED_TO_LOAD}</Text>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </Pressable>
       </View>
     );
   }
 
-  const favorite = isFavorite(movie.imdbID);
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {movie.poster && (
-        <CachedImage source={{ uri: movie.poster }} style={styles.poster} resizeMode="cover" />
-      )}
-
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{movie.title}</Text>
-          <Pressable onPress={handleToggleFavorite} style={styles.favoriteButton}>
-            <Text style={styles.favoriteIcon}>{favorite ? '❤️' : '🤍'}</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.year}>{movie.year}</Text>
-        {movie.genre && <Text style={styles.genre}>{movie.genre}</Text>}
-      </View>
-
-      <View style={styles.section}>
-        {movie.plot && (
-          <View style={styles.plotSection}>
-            <Text style={styles.sectionTitle}>Plot</Text>
-            <Text style={styles.plotText}>{movie.plot}</Text>
-          </View>
-        )}
-
-        {movie.director && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Director:</Text>
-            <Text style={styles.infoValue}>{movie.director}</Text>
-          </View>
-        )}
-
-        {movie.actors && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Cast:</Text>
-            <Text style={styles.infoValue}>{movie.actors}</Text>
-          </View>
-        )}
-
-        {movie.runtime && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Runtime:</Text>
-            <Text style={styles.infoValue}>{movie.runtime}</Text>
-          </View>
-        )}
-
-        {movie.released && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Released:</Text>
-            <Text style={styles.infoValue}>{movie.released}</Text>
-          </View>
-        )}
-
-        {movie.ratings && movie.ratings.length > 0 && (
-          <View style={styles.ratingsSection}>
-            <Text style={styles.sectionTitle}>Ratings</Text>
-            {movie.ratings.map((rating, idx) => (
-              <View key={idx} style={styles.ratingRow}>
-                <Text style={styles.ratingSource}>{rating.Source}:</Text>
-                <Text style={styles.ratingValue}>{rating.Value}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <PosterSection
+          poster={movie.poster}
+          renderOverlayButtons={renderOverlayButtons}
+        />
+        <MovieDetailsSection movie={movie} rating={imdbRating} actors={actors} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
-  content: {
-    paddingBottom: 32,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 0,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: APP_CONSTANTS.COLORS.BACKGROUND.PRIMARY,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
   },
   errorText: {
     fontSize: 16,
-    color: '#d32f2f',
+    color: APP_CONSTANTS.COLORS.ACCENT,
     textAlign: 'center',
-  },
-  poster: {
-    width: '100%',
-    height: 400,
-    backgroundColor: '#f0f0f0',
-  },
-  header: {
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  title: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111',
-    marginRight: 12,
-  },
-  favoriteButton: {
-    padding: 8,
-  },
-  favoriteIcon: {
-    fontSize: 28,
-  },
-  year: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
-  },
-  genre: {
-    fontSize: 14,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  section: {
-    padding: 16,
-  },
-  plotSection: {
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
+  backButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: APP_CONSTANTS.COLORS.ACCENT,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: APP_CONSTANTS.COLORS.TEXT.PRIMARY,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#111',
-    marginBottom: 12,
   },
-  plotText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#333',
+  closeButton: {
+    zIndex: 10,
   },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    flexWrap: 'wrap',
+  favoriteButton: {
+    zIndex: 10,
   },
-  infoLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#555',
-    marginRight: 8,
-    minWidth: 80,
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 15,
-    color: '#333',
-  },
-  ratingsSection: {
-    marginTop: 8,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  ratingSource: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#555',
-    minWidth: 100,
-  },
-  ratingValue: {
-    fontSize: 15,
-    color: '#333',
   },
 });
 

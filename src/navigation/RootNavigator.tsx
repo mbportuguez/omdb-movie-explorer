@@ -29,7 +29,7 @@ function RootNavigator() {
             <Stack.Screen
               name="MovieDetails"
               component={MovieDetailsScreen}
-              options={{ title: 'Details' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="Favorites"

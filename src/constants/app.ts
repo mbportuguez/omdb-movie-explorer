@@ -15,6 +15,34 @@ export const APP_CONSTANTS = {
   YEAR: {
     START_YEAR: 1900,
   },
+  DETAILS: {
+    POSTER_HEIGHT: 500,
+    MAX_ACTORS_DISPLAY: 6,
+    GRADIENT_HEIGHT: {
+      POSTER: 80,
+      DETAILS: 50,
+    },
+  },
+  COLORS: {
+    BACKGROUND: {
+      PRIMARY: '#1a1a1a',
+      SECONDARY: '#2a2a2a',
+      TERTIARY: '#3a3a3a',
+    },
+    GRADIENT: {
+      POSTER_START: 'rgba(0,0,0,0)',
+      POSTER_END: 'rgba(42,42,42,1)',
+      DETAILS_START: 'rgba(42,42,42,0)',
+      DETAILS_END: 'rgba(42,42,42,1)',
+    },
+    ACCENT: '#ff6b35',
+    TEXT: {
+      PRIMARY: '#fff',
+      SECONDARY: '#ccc',
+      TERTIARY: '#888',
+    },
+    IMDB: '#FFD700',
+  },
 } as const;
 
 export const ERROR_MESSAGES = {
