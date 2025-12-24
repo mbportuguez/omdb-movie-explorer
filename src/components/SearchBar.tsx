@@ -17,6 +17,10 @@ type SearchBarProps = {
   lastTitleSort: 'title_asc' | 'title_desc';
   onYearSortToggle: () => void;
   onTitleSortToggle: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onLayout?: (event: { nativeEvent: { layout: { y: number; height: number } } }) => void;
+  inputRef?: React.RefObject<TextInput | null>;
 };
 
 export default function SearchBar({
@@ -32,15 +36,20 @@ export default function SearchBar({
   lastTitleSort,
   onYearSortToggle,
   onTitleSortToggle,
+  onFocus,
+  onBlur,
+  onLayout,
+  inputRef,
 }: SearchBarProps) {
   const searchInputRef = useRef<TextInput>(null);
+  const actualInputRef = inputRef || searchInputRef;
 
   return (
     <View style={styles.searchContainer}>
-      <View style={styles.searchBar}>
+      <View style={styles.searchBar} onLayout={onLayout}>
         <Icon name="search" size={20} color="#888" />
         <TextInput
-          ref={searchInputRef}
+          ref={actualInputRef}
           value={queryInput}
           onChangeText={onChangeQuery}
           placeholder="Search movie ...."
@@ -49,6 +58,8 @@ export default function SearchBar({
           returnKeyType="search"
           blurOnSubmit={false}
           autoCorrect={false}
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
         <Pressable onPress={onToggleFilters} style={styles.filterIconButton}>
           <Icon name="options" size={18} color="#fff" />

@@ -1,5 +1,5 @@
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MovieType } from '../api/omdb';
@@ -9,6 +9,7 @@ import { useMovieSearch } from '../hooks/useMovieSearch';
 import { useLatestMovies } from '../hooks/useLatestMovies';
 import { useSortToggle } from '../hooks/useSortToggle';
 import { useTypingIndicator } from '../hooks/useTypingIndicator';
+import { useRecentSearches } from '../hooks/useRecentSearches';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { APP_CONSTANTS } from '../constants/app';
 import { sortMovies } from '../utils/sortMovies';
@@ -17,6 +18,7 @@ import SearchBar from '../components/SearchBar';
 import CategoryChips from '../components/CategoryChips';
 import HomeContent from '../components/HomeContent';
 import SearchResults from '../components/SearchResults';
+import RecentSearches from '../components/RecentSearches';
 import YearPickerModal from '../components/YearPickerModal';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'MoviesList'>;
@@ -37,6 +39,9 @@ function MoviesListScreen() {
   const [year, setYear] = useState('');
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchBarLayout, setSearchBarLayout] = useState({ y: 0, height: 0 });
+  const searchInputRef = useRef<TextInput>(null);
 
   const { isUserTyping, handleTyping } = useTypingIndicator();
   const { movies: latestMovies, loading: isLoadingLatest, error: latestError } = useLatestMovies();
@@ -48,6 +53,7 @@ function MoviesListScreen() {
     handleYearSortToggle,
     handleTitleSortToggle,
   } = useSortToggle();
+  const { recentSearches, addSearch, removeSearch, clearAll } = useRecentSearches();
 
   const {
     searchResults,
@@ -82,6 +88,20 @@ function MoviesListScreen() {
     [debouncedQuery],
   );
 
+  // Save search when results are successfully loaded
+  const lastSavedQueryRef = useRef<string>('');
+  useEffect(() => {
+    if (
+      showSearchResults &&
+      searchResults.length > 0 &&
+      !isLoadingSearch &&
+      debouncedQuery.trim() !== lastSavedQueryRef.current
+    ) {
+      lastSavedQueryRef.current = debouncedQuery.trim();
+      addSearch(debouncedQuery);
+    }
+  }, [showSearchResults, searchResults.length, isLoadingSearch, debouncedQuery, addSearch]);
+
   const handleMoviePress = useCallback(
     (imdbID: string) => {
       navigation.navigate('MovieDetails', { imdbID });
@@ -100,6 +120,33 @@ function MoviesListScreen() {
   const handleFavoritesPress = useCallback(() => {
     navigation.navigate('Favorites');
   }, [navigation]);
+
+  const handleSelectRecentSearch = useCallback(
+    (query: string) => {
+      setQueryInput(query);
+      setIsSearchFocused(false);
+    },
+    [],
+  );
+
+  const filteredRecentSearches = useMemo(() => {
+    if (!queryInput.trim()) {
+      return recentSearches;
+    }
+    const query = queryInput.trim().toLowerCase();
+    return recentSearches.filter(search => 
+      search.toLowerCase().includes(query)
+    );
+  }, [recentSearches, queryInput]);
+
+  const showRecentSearches = useMemo(
+    () =>
+      isSearchFocused &&
+      !showSearchResults &&
+      queryInput.trim().length < APP_CONSTANTS.SEARCH.MIN_QUERY_LENGTH &&
+      filteredRecentSearches.length > 0,
+    [isSearchFocused, showSearchResults, queryInput, filteredRecentSearches.length],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -121,7 +168,34 @@ function MoviesListScreen() {
         lastTitleSort={lastTitleSort}
         onYearSortToggle={handleYearSortToggle}
         onTitleSortToggle={handleTitleSortToggle}
+        onFocus={() => setIsSearchFocused(true)}
+        onBlur={() => setIsSearchFocused(false)}
+        onLayout={(event) => {
+          const { y, height } = event.nativeEvent.layout;
+          setSearchBarLayout({ y, height });
+        }}
+        inputRef={searchInputRef}
       />
+
+      {showRecentSearches && (
+        <>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              searchInputRef.current?.blur();
+              setIsSearchFocused(false);
+            }}
+          >
+            <View style={[StyleSheet.absoluteFill, { zIndex: 1000 }]} />
+          </TouchableWithoutFeedback>
+          <RecentSearches
+            searches={filteredRecentSearches}
+            onSelectSearch={handleSelectRecentSearch}
+            onRemoveSearch={removeSearch}
+            onClearAll={clearAll}
+            top={searchBarLayout.y + searchBarLayout.height + 140}
+          />
+        </>
+      )}
 
       {showSearchResults && <CategoryChips type={type} onTypeChange={setType} />}
 
