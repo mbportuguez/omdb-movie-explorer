@@ -20,6 +20,10 @@ A React Native mobile application for exploring movies using the [OMDb API](http
 - 🖼️ **Image Caching**: Efficient image loading with disk caching
 - ⚡ **Performance Optimized**: Lazy loading, memoization, and efficient list rendering
 
+## 📱 Download APK
+
+[➡️ Latest Release APK](https://github.com/mbportuguez/omdb-movie-explorer/releases/tag/v1.0.0)
+
 ## Prerequisites
 
 - **Node.js** >= 20
